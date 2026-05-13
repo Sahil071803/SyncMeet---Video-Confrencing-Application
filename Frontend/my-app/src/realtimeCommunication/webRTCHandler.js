@@ -1,5 +1,7 @@
 import {
-  getSocket,
+  sendWebRTCOffer,
+  sendWebRTCAnswer,
+  sendWebRTCIceCandidate,
 } from "./socketConnection";
 
 // ======================================
@@ -32,6 +34,8 @@ const configuration = {
       ],
     },
   ],
+
+  iceCandidatePoolSize: 10,
 };
 
 // ======================================
@@ -85,6 +89,15 @@ const createPeerConnection = (
     ) {
       remoteVideoRefGlobal.current.srcObject =
         remoteStream;
+
+      remoteVideoRefGlobal.current
+        .play()
+        .catch((err) => {
+          console.log(
+            "⚠️ Autoplay blocked:",
+            err
+          );
+        });
     }
 
     // ======================================
@@ -137,8 +150,25 @@ const createPeerConnection = (
           }
         });
 
+      if (
+        remoteVideoRefGlobal?.current
+      ) {
+        remoteVideoRefGlobal.current.srcObject =
+          remoteStream;
+
+        remoteVideoRefGlobal.current
+          .play()
+          .catch((err) => {
+            console.log(
+              "⚠️ Remote autoplay blocked:",
+              err
+            );
+          });
+      }
+
       console.log(
-        "✅ Remote stream connected"
+        "✅ Remote stream connected",
+        remoteStream.getTracks()
       );
     };
 
@@ -152,8 +182,7 @@ const createPeerConnection = (
           event.candidate &&
           targetUserId
         ) {
-          getSocket()?.emit(
-            "webrtc-ice-candidate",
+          sendWebRTCIceCandidate(
             {
               targetUserId,
 
@@ -181,19 +210,28 @@ const createPeerConnection = (
 
         if (
           peerConnection.connectionState ===
-          "disconnected"
+          "connected"
         ) {
           console.log(
-            "❌ Peer disconnected"
+            "✅ Peers connected"
           );
         }
 
         if (
           peerConnection.connectionState ===
-          "connected"
+          "failed"
         ) {
           console.log(
-            "✅ Peers connected"
+            "❌ Connection failed"
+          );
+        }
+
+        if (
+          peerConnection.connectionState ===
+          "disconnected"
+        ) {
+          console.log(
+            "❌ Peer disconnected"
           );
         }
       };
@@ -220,13 +258,13 @@ const createPeerConnection = (
 };
 
 // ======================================
-// GET LOCAL CAMERA PREVIEW
+// GET LOCAL PREVIEW
 // ======================================
 
 export const getLocalPreview =
   async (localVideoRef) => {
     try {
-      // REUSE EXISTING STREAM
+      // REUSE STREAM
 
       if (localStream) {
         if (
@@ -240,7 +278,7 @@ export const getLocalPreview =
       }
 
       // ======================================
-      // TRY VIDEO + AUDIO
+      // VIDEO + AUDIO
       // ======================================
 
       try {
@@ -277,34 +315,25 @@ export const getLocalPreview =
         );
       } catch (videoError) {
         console.log(
-          "❌ Video access failed:",
+          "❌ Video failed:",
           videoError
         );
 
         console.log(
-          "⚠️ Switching to audio-only mode"
+          "⚠️ Audio-only mode"
         );
-
-        // ======================================
-        // FALLBACK AUDIO ONLY
-        // ======================================
 
         localStream =
           await navigator.mediaDevices.getUserMedia(
             {
               audio: true,
-
               video: false,
             }
           );
-
-        console.log(
-          "✅ Audio-only mode started"
-        );
       }
 
       // ======================================
-      // ATTACH STREAM TO VIDEO
+      // ATTACH LOCAL VIDEO
       // ======================================
 
       if (
@@ -312,12 +341,21 @@ export const getLocalPreview =
       ) {
         localVideoRef.current.srcObject =
           localStream;
+
+        localVideoRef.current
+          .play()
+          .catch((err) => {
+            console.log(
+              "⚠️ Local autoplay blocked:",
+              err
+            );
+          });
       }
 
       return localStream;
     } catch (err) {
       console.log(
-        "❌ Media initialization failed:",
+        "❌ Media init failed:",
         err
       );
 
@@ -351,8 +389,6 @@ export const callToOtherUser =
         return;
       }
 
-      // CHECK LOCAL STREAM
-
       if (!localStream) {
         console.log(
           "❌ Local stream missing"
@@ -367,6 +403,10 @@ export const callToOtherUser =
 
       createPeerConnection(userId);
 
+      console.log(
+        "📞 Creating offer"
+      );
+
       // CREATE OFFER
 
       const offer =
@@ -380,14 +420,10 @@ export const callToOtherUser =
 
       // SEND OFFER
 
-      getSocket()?.emit(
-        "webrtc-offer",
-        {
-          targetUserId: userId,
-
-          offer,
-        }
-      );
+      sendWebRTCOffer({
+        targetUserId: userId,
+        offer,
+      });
 
       console.log(
         "📞 Offer sent"
@@ -413,8 +449,6 @@ export const handleWebRTCOffer =
 
       connectedUserId =
         data.from;
-
-      // CHECK LOCAL STREAM
 
       if (!localStream) {
         console.log(
@@ -442,17 +476,31 @@ export const handleWebRTCOffer =
         "✅ Remote description set"
       );
 
-      // ADD PENDING ICE
+      // ADD QUEUED ICE
 
-      for (const candidate of pendingCandidates) {
-        await peerConnection.addIceCandidate(
-          new RTCIceCandidate(
-            candidate
-          )
-        );
+      while (
+        pendingCandidates.length > 0
+      ) {
+        const candidate =
+          pendingCandidates.shift();
+
+        try {
+          await peerConnection.addIceCandidate(
+            new RTCIceCandidate(
+              candidate
+            )
+          );
+
+          console.log(
+            "✅ Queued ICE added"
+          );
+        } catch (err) {
+          console.log(
+            "❌ Queued ICE error:",
+            err
+          );
+        }
       }
-
-      pendingCandidates = [];
 
       // CREATE ANSWER
 
@@ -467,22 +515,19 @@ export const handleWebRTCOffer =
 
       // SEND ANSWER
 
-      getSocket()?.emit(
-        "webrtc-answer",
-        {
-          targetUserId:
-            data.from,
+      sendWebRTCAnswer({
+        targetUserId:
+          data.from,
 
-          answer,
-        }
-      );
+        answer,
+      });
 
       console.log(
         "✅ Answer sent"
       );
     } catch (err) {
       console.log(
-        "❌ Offer handling error:",
+        "❌ Offer error:",
         err
       );
     }
@@ -501,7 +546,19 @@ export const handleWebRTCAnswer =
 
       if (!peerConnection) {
         console.log(
-          "❌ Peer connection missing"
+          "❌ Missing peer connection"
+        );
+
+        return;
+      }
+
+      if (
+        peerConnection.signalingState !==
+        "have-local-offer"
+      ) {
+        console.log(
+          "⚠️ Invalid signaling state:",
+          peerConnection.signalingState
         );
 
         return;
@@ -519,17 +576,31 @@ export const handleWebRTCAnswer =
         "✅ Remote answer set"
       );
 
-      // ADD PENDING ICE
+      // ADD QUEUED ICE
 
-      for (const candidate of pendingCandidates) {
-        await peerConnection.addIceCandidate(
-          new RTCIceCandidate(
-            candidate
-          )
-        );
+      while (
+        pendingCandidates.length > 0
+      ) {
+        const candidate =
+          pendingCandidates.shift();
+
+        try {
+          await peerConnection.addIceCandidate(
+            new RTCIceCandidate(
+              candidate
+            )
+          );
+
+          console.log(
+            "✅ Queued ICE added"
+          );
+        } catch (err) {
+          console.log(
+            "❌ Queued ICE error:",
+            err
+          );
+        }
       }
-
-      pendingCandidates = [];
     } catch (err) {
       console.log(
         "❌ Answer error:",
@@ -539,7 +610,7 @@ export const handleWebRTCAnswer =
   };
 
 // ======================================
-// HANDLE ICE CANDIDATE
+// HANDLE ICE
 // ======================================
 
 export const handleWebRTCIceCandidate =
@@ -548,7 +619,7 @@ export const handleWebRTCIceCandidate =
       if (!data?.candidate)
         return;
 
-      // IF REMOTE DESCRIPTION NOT READY
+      // QUEUE ICE
 
       if (
         !peerConnection ||
@@ -585,7 +656,7 @@ export const handleWebRTCIceCandidate =
   };
 
 // ======================================
-// TOGGLE MICROPHONE
+// TOGGLE MIC
 // ======================================
 
 export const toggleMic = (
@@ -609,7 +680,7 @@ export const toggleMic = (
     );
   } catch (err) {
     console.log(
-      "❌ Mic toggle error:",
+      "❌ Mic error:",
       err
     );
   }
@@ -640,7 +711,7 @@ export const toggleCamera = (
     );
   } catch (err) {
     console.log(
-      "❌ Camera toggle error:",
+      "❌ Camera error:",
       err
     );
   }
@@ -673,7 +744,7 @@ export const stopLocalStream =
           });
       }
 
-      // CLOSE PEER CONNECTION
+      // CLOSE PEER
 
       if (peerConnection) {
         peerConnection.close();
@@ -688,7 +759,7 @@ export const stopLocalStream =
           null;
       }
 
-      // RESET VARIABLES
+      // RESET
 
       localStream = null;
 
