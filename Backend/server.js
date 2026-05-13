@@ -26,8 +26,14 @@ const initSocketServer = require("./SocketServer");
 const app = express();
 const server = http.createServer(app);
 
-const PORT = process.env.API_PORT || 5002;
-const HOST = "0.0.0.0";
+// =============================================
+// ENVIRONMENT VARIABLES
+// =============================================
+
+const PORT = process.env.PORT || 5002;
+
+const CLIENT_URL =
+  process.env.CLIENT_URL || "*";
 
 // =============================================
 // MIDDLEWARE
@@ -35,15 +41,30 @@ const HOST = "0.0.0.0";
 
 app.use(
   cors({
-    origin: true,
+    origin: CLIENT_URL,
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "PATCH",
+      "OPTIONS",
+    ],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+    ],
   })
 );
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
 
 // =============================================
 // HEALTH CHECK
@@ -52,7 +73,8 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "🚀 Video Conferencing Backend Running",
+    message:
+      "🚀 SyncMeet Backend Running Successfully",
   });
 });
 
@@ -92,11 +114,16 @@ app.use((req, res) => {
 // =============================================
 
 app.use((err, req, res, next) => {
-  console.log("❌ Global Server Error:", err);
+  console.error(
+    "❌ Global Server Error:",
+    err
+  );
 
   res.status(err?.status || 500).json({
     success: false,
-    message: err?.message || "Internal server error",
+    message:
+      err?.message ||
+      "Internal server error",
   });
 });
 
@@ -114,17 +141,32 @@ const startServer = async () => {
   try {
     console.log("📦 Connecting MongoDB...");
 
-    await mongoose.connect(process.env.MONGO_URL);
+    await mongoose.connect(
+      process.env.MONGO_URL
+    );
 
-    console.log("✅ MongoDB Connected");
+    console.log(
+      "✅ MongoDB Connected Successfully"
+    );
 
-    server.listen(PORT, HOST, () => {
-      console.log("\n🚀 Server running successfully");
-      console.log(`🌐 Local:   http://localhost:${PORT}`);
-      console.log(`📱 Mobile:  http://10.125.246.112:${PORT}\n`);
+    server.listen(PORT, () => {
+      console.log(
+        `🚀 Server running on port ${PORT}`
+      );
+
+      console.log(
+        `🌍 Environment: ${
+          process.env.NODE_ENV ||
+          "development"
+        }`
+      );
     });
   } catch (err) {
-    console.log("❌ MongoDB Connection Error:", err);
+    console.error(
+      "❌ MongoDB Connection Error:",
+      err
+    );
+
     process.exit(1);
   }
 };
@@ -135,10 +177,28 @@ startServer();
 // PROCESS ERROR HANDLERS
 // =============================================
 
-process.on("unhandledRejection", (err) => {
-  console.log("❌ Unhandled Rejection:", err);
-});
+process.on(
+  "unhandledRejection",
+  (err) => {
+    console.error(
+      "❌ Unhandled Rejection:",
+      err
+    );
 
-process.on("uncaughtException", (err) => {
-  console.log("❌ Uncaught Exception:", err);
-});
+    server.close(() => {
+      process.exit(1);
+    });
+  }
+);
+
+process.on(
+  "uncaughtException",
+  (err) => {
+    console.error(
+      "❌ Uncaught Exception:",
+      err
+    );
+
+    process.exit(1);
+  }
+);
