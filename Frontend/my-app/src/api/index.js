@@ -79,139 +79,141 @@
 //     };
 //   }
 // };
-import axios from "axios";
+// import axios from "axios";
 
-// ==========================================
-// AXIOS INSTANCE
-// ==========================================
+// // ==========================================
+// // AXIOS INSTANCE
+// // ==========================================
 
-const API = axios.create({
-  baseURL: "http://localhost:5002/api",
-});
+// const API = axios.create({
+//   baseURL: "http://localhost:5002/api",
+// });
 
-// ==========================================
-// AUTH INTERCEPTOR
-// ==========================================
+// // ==========================================
+// // AUTH INTERCEPTOR
+// // ==========================================
 
-API.interceptors.request.use((req) => {
-  try {
-    const user = JSON.parse(
-      localStorage.getItem("user")
-    );
+// API.interceptors.request.use((req) => {
+//   try {
+//     const user = JSON.parse(
+//       localStorage.getItem("user")
+//     );
 
-    if (user?.token) {
-      req.headers.Authorization = `Bearer ${user.token}`;
-    }
-  } catch (error) {
-    console.log(
-      "Token parsing error:",
-      error
-    );
-  }
+//     if (user?.token) {
+//       req.headers.Authorization = `Bearer ${user.token}`;
+//     }
+//   } catch (error) {
+//     console.log(
+//       "Token parsing error:",
+//       error
+//     );
+//   }
 
-  return req;
-});
+//   return req;
 
-// ==========================================
-// SEND FRIEND INVITATION
-// ==========================================
+// // ==========================================
+// // SEND FRIEND INVITATION
+// // ==========================================
 
-export const sendFriendInvitation =
-  async (data) => {
-    try {
-      const response = await API.post(
-        "/friend-invitation/invite",
-        data
-      );
+// export const sendFriendInvitation =
+//   async (data) => {
+//     try {
+//       const response = await API.post(
+//         "/friend-invitation/invite",
+//         data
+//       );
 
-      return response.data;
-    } catch (exception) {
-      return {
-        error: true,
-        exception,
-      };
-    }
-  };
+//       return response.data;
+//     } catch (exception) {
+//       return {
+//         error: true,
+//         exception,
+//       };
+//     }
+//   };
 
-// ==========================================
-// ACCEPT FRIEND INVITATION
-// ==========================================
+// // ==========================================
+// // ACCEPT FRIEND INVITATION
+// // ==========================================
 
-export const acceptFriendInvitation =
-  async (data) => {
-    try {
-      const response = await API.post(
-        "/friend-invitation/accept",
-        data
-      );
+// export const acceptFriendInvitation =
+//   async (data) => {
+//     try {
+//       const response = await API.post(
+//         "/friend-invitation/accept",
+//         data
+//       );
 
-      return response.data;
-    } catch (exception) {
-      return {
-        error: true,
-        exception,
-      };
-    }
-  };
+//       return response.data;
+//     } catch (exception) {
+//       return {
+//         error: true,
+//         exception,
+//       };
+//     }
+//   };
 
-// ==========================================
-// REJECT FRIEND INVITATION
-// ==========================================
+// // ==========================================
+// // REJECT FRIEND INVITATION
+// // ==========================================
 
-export const rejectFriendInvitation =
-  async (data) => {
-    try {
-      const response = await API.post(
-        "/friend-invitation/reject",
-        data
-      );
+// export const rejectFriendInvitation =
+//   async (data) => {
+//     try {
+//       const response = await API.post(
+//         "/friend-invitation/reject",
+//         data
+//       );
 
-      return response.data;
-    } catch (exception) {
-      return {
-        error: true,
-        exception,
-      };
-    }
-  };
+//       return response.data;
+//     } catch (exception) {
+//       return {
+//         error: true,
+//         exception,
+//       };
+//     }
+//   };
 
-// ==========================================
-// REMOVE FRIEND
-// ==========================================
+// // ==========================================
+// // REMOVE FRIEND
+// // ==========================================
 
-export const removeFriend = async (
-  friendId
-) => {
-  try {
+// export const removeFriend = async (
+//   friendId
+// ) => {
+//   try {
 
-    console.log(
-      "Removing friend:",
-      friendId
-    );
+//     console.log(
+//       "Removing friend:",
+//       friendId
+//     );
 
-    const response =
-      await API.delete(
-        `/friend-invitation/remove/${friendId}`
-      );
+//     const response =
+//       await API.delete(
+//         `/friend-invitation/remove/${friendId}`
+//       );
 
-    return response.data;
+//     return response.data;
 
-  } catch (exception) {
+//   } catch (exception) {
 
-    console.log(
-      "REMOVE FRIEND ERROR:",
-      exception
-    );
+//     console.log(
+//       "REMOVE FRIEND ERROR:",
+//       exception
+//     );
 
-    return {
-      error: true,
-      exception,
-    };
-  }
-};
+//     return {
+//       error: true,
+//       exception,
+//     };
+//   }
+// };
 
-// ==========================================
-// EXPORT API INSTANCE
-// ==========================================
+// // ==========================================
+// // EXPORT API INSTANCE
+// // ==========================================
 
-export default API;
+// export default API;
+
+export * from "./api";
+export { default } from "./api";

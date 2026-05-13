@@ -1,4 +1,5 @@
 const connectedUsers = new Map();
+
 let io = null;
 
 const setSocketServerInstance = (instance) => {
@@ -20,15 +21,23 @@ const addNewConnectedUsers = ({ socketId, userId }) => {
 };
 
 const removeConnectedUser = (socketId) => {
+  let removedUserId = null;
+
   for (const [userId, sockets] of connectedUsers.entries()) {
     if (sockets.has(socketId)) {
       sockets.delete(socketId);
+
+      removedUserId = userId;
+
       if (sockets.size === 0) {
         connectedUsers.delete(userId);
       }
+
       break;
     }
   }
+
+  return removedUserId;
 };
 
 const getSocketIds = (userId) => {
@@ -37,7 +46,19 @@ const getSocketIds = (userId) => {
     : [];
 };
 
-const getOnlineUsers = () => Array.from(connectedUsers.keys());
+const getOnlineUsers = () => {
+  return Array.from(connectedUsers.keys()).map((userId) => ({
+    userId,
+  }));
+};
+
+const emitOnlineUsers = () => {
+  if (!io) return;
+
+  io.emit("online-users", {
+    onlineUsers: getOnlineUsers(),
+  });
+};
 
 module.exports = {
   setSocketServerInstance,
@@ -46,4 +67,5 @@ module.exports = {
   removeConnectedUser,
   getSocketIds,
   getOnlineUsers,
+  emitOnlineUsers,
 };

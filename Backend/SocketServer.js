@@ -14,9 +14,6 @@ const {
 
 let io;
 
-// =============================
-// INIT SOCKET SERVER
-// =============================
 const initSocketServer = (server) => {
   if (io) return io;
 
@@ -27,75 +24,61 @@ const initSocketServer = (server) => {
     },
     pingTimeout: 60000,
     pingInterval: 25000,
+    transports: ["websocket", "polling"],
   });
 
   serverStore.setSocketServerInstance(io);
 
-  // =============================
-  // AUTH
-  // =============================
   io.use((socket, next) => {
     authSocket(socket, next);
   });
 
-  // =============================
-  // CONNECTION
-  // =============================
   io.on("connection", (socket) => {
     console.log("🔌 Connected:", socket.id);
 
-    newConnectionHandler(socket, io);
-
     const userId = socket.user?.userId;
 
-    // =============================
-    // FRIENDS (PUSH SYSTEM)
-    // =============================
-    socket.on("get-friends", () => {
-      updateFriends(userId);
+    newConnectionHandler(socket);
+
+    socket.on("get-friends", async () => {
+      if (!userId) return;
+      await updateFriends(userId);
     });
 
-    // =============================
-    // INVITATIONS
-    // =============================
-    socket.on("get-pending-invitations", () => {
-      updateFriendsPendingInvitations(userId);
+    socket.on("get-pending-invitations", async () => {
+      if (!userId) return;
+      await updateFriendsPendingInvitations(userId);
     });
 
-    // =============================
-    // ONLINE USERS
-    // =============================
     socket.on("get-online-users", () => {
       socket.emit("online-users", {
         onlineUsers: serverStore.getOnlineUsers(),
       });
     });
 
-    // =============================
-    // DIRECT MESSAGE
-    // =============================
     socket.on("direct-message", async (data, callback) => {
       try {
         const result = await directMessageHandler(socket, data);
 
         if (callback) callback(result);
 
-        if (result?.message && result?.receiverSockets?.length) {
-          result.receiverSockets.forEach((socketId) => {
-            io.to(socketId).emit("direct-message", result.message);
-          });
+        if (result?.message) {
+          socket.emit("direct-message", result.message);
+
+          if (result?.receiverSockets?.length) {
+            result.receiverSockets.forEach((socketId) => {
+              io.to(socketId).emit("direct-message", result.message);
+            });
+          }
         }
       } catch (err) {
         console.log("❌ direct-message error:", err);
       }
     });
 
-    // =============================
-    // DISCONNECT
-    // =============================
     socket.on("disconnect", (reason) => {
       console.log("🔌 Disconnected:", socket.id, reason);
-      disconnectHandler(socket, io);
+      disconnectHandler(socket);
     });
   });
 

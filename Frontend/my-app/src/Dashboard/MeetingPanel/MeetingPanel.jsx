@@ -1,20 +1,18 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { styled } from "@mui/system";
 
-import VideocamIcon from "@mui/icons-material/Videocam";
-import VideocamOffIcon from "@mui/icons-material/VideocamOff";
+import { Typography, IconButton } from "@mui/material";
 
-import MicIcon from "@mui/icons-material/Mic";
-import MicOffIcon from "@mui/icons-material/MicOff";
+import useResponsive from "../../hooks/useResponsive";
 
-import CallEndIcon from "@mui/icons-material/CallEnd";
-
-import PhoneIcon from "@mui/icons-material/Phone";
+import MicRoundedIcon from "@mui/icons-material/MicRounded";
+import MicOffRoundedIcon from "@mui/icons-material/MicOffRounded";
+import VideocamRoundedIcon from "@mui/icons-material/VideocamRounded";
+import VideocamOffRoundedIcon from "@mui/icons-material/VideocamOffRounded";
+import ScreenShareRoundedIcon from "@mui/icons-material/ScreenShareRounded";
+import CallEndRoundedIcon from "@mui/icons-material/CallEndRounded";
+import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
 
 import {
   getLocalPreview,
@@ -28,431 +26,275 @@ import {
   handleWebRTCIceCandidate,
 } from "../../realtimeCommunication/webRTCHandler";
 
-import {
-  getSocket,
-} from "../../realtimeCommunication/socketConnection";
+import { getSocket } from "../../realtimeCommunication/socketConnection";
 
-// ======================================
-// STYLES
-// ======================================
-
-const Container = styled("div")({
-  height: "100%",
-
-  background: "rgba(15,23,42,0.92)",
-
-  borderLeft:
-    "1px solid rgba(255,255,255,0.05)",
-
-  backdropFilter: "blur(12px)",
-
-  padding: "22px",
-
-  display: "flex",
-
-  flexDirection: "column",
-
-  justifyContent: "space-between",
-});
-
-const Top = styled("div")({
-  display: "flex",
-
-  flexDirection: "column",
-
-  gap: "18px",
-});
-
-const Card = styled("div")({
-  padding: "18px",
-
-  borderRadius: "18px",
-
-  background: "rgba(255,255,255,0.04)",
-
-  border:
-    "1px solid rgba(255,255,255,0.05)",
-
-  color: "#fff",
-});
-
-const VideoGrid = styled("div")({
-  display: "grid",
-
-  gridTemplateColumns: "1fr",
-
-  gap: "16px",
-});
-
-const VideoContainer = styled("div")({
+const Container = styled("div", {
+  shouldForwardProp: (prop) => prop !== "mobile",
+})(({ mobile }) => ({
   width: "100%",
-
-  height: "240px",
-
-  borderRadius: "18px",
-
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
   overflow: "hidden",
-
-  background: "#020617",
-
-  border:
-    "1px solid rgba(255,255,255,0.05)",
-
   position: "relative",
+  background: "linear-gradient(180deg,#020617 0%,#0B1120 100%)",
+
+  ...(mobile && {
+    paddingBottom: "90px",
+    boxSizing: "border-box",
+  }),
+}));
+
+const Header = styled("div", {
+  shouldForwardProp: (prop) => prop !== "mobile",
+})(({ mobile }) => ({
+  width: "100%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: mobile ? "14px 16px" : "20px 24px",
+  borderBottom: "1px solid rgba(255,255,255,0.05)",
+  boxSizing: "border-box",
+}));
+
+const HeaderLeft = styled("div")({
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
 });
 
-const VideoLabel = styled("div")({
-  position: "absolute",
-
-  top: "10px",
-
-  left: "10px",
-
-  padding: "4px 10px",
-
-  borderRadius: "10px",
-
-  background: "rgba(0,0,0,0.45)",
-
-  color: "#fff",
-
-  fontSize: "12px",
-
-  zIndex: 10,
-});
+const VideoArea = styled("div", {
+  shouldForwardProp: (prop) => prop !== "mobile",
+})(({ mobile }) => ({
+  flex: 1,
+  position: "relative",
+  margin: mobile ? "10px" : "18px",
+  padding: mobile ? "14px" : "0px",
+  borderRadius: mobile ? "22px" : "28px",
+  overflow: "hidden",
+  background: "#000",
+  border: "1px solid rgba(255,255,255,0.06)",
+  minHeight: mobile ? "220px" : "520px",
+  boxSizing: "border-box",
+}));
 
 const Video = styled("video")({
   width: "100%",
-
   height: "100%",
-
   objectFit: "cover",
+  background: "#000",
+  borderRadius: "18px",
 });
 
-const Controls = styled("div")({
+const RemoteUserInfo = styled("div", {
+  shouldForwardProp: (prop) => prop !== "mobile",
+})(({ mobile }) => ({
+  position: "absolute",
+  left: mobile ? "18px" : "16px",
+  bottom: mobile ? "18px" : "16px",
+  padding: "9px 13px",
+  borderRadius: "14px",
+  background: "rgba(0,0,0,0.42)",
+  backdropFilter: "blur(18px)",
+  border: "1px solid rgba(255,255,255,0.08)",
   display: "flex",
+  flexDirection: "column",
+  gap: "2px",
+}));
 
-  justifyContent: "center",
+const LocalVideoWrapper = styled("div", {
+  shouldForwardProp: (prop) => prop !== "mobile",
+})(({ mobile }) => ({
+  position: "absolute",
+  right: mobile ? "18px" : "16px",
+  top: mobile ? "18px" : "16px",
+  width: mobile ? "96px" : "220px",
+  height: mobile ? "130px" : "150px",
+  borderRadius: "16px",
+  overflow: "hidden",
+  background: "#000",
+  border: "2px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
+}));
 
+const Controls = styled("div", {
+  shouldForwardProp: (prop) => prop !== "mobile",
+})(({ mobile }) => ({
+  width: "100%",
+  display: "flex",
   alignItems: "center",
+  justifyContent: "center",
+  flexWrap: "wrap",
+  gap: mobile ? "10px" : "16px",
+  padding: mobile ? "12px 14px 18px" : "20px",
+  boxSizing: "border-box",
+}));
 
-  gap: "16px",
+const ControlButton = styled(IconButton, {
+  shouldForwardProp: (prop) =>
+    prop !== "danger" && prop !== "success" && prop !== "mobile",
+})(({ danger, success, mobile }) => ({
+  width: mobile ? "50px" : "64px",
+  height: mobile ? "50px" : "64px",
+  borderRadius: mobile ? "18px" : "20px",
+  color: "#fff",
+  transition: "all 0.25s ease",
 
-  marginTop: "20px",
-});
+  background: danger
+    ? "linear-gradient(135deg,#EF4444,#DC2626)"
+    : success
+    ? "linear-gradient(135deg,#22C55E,#16A34A)"
+    : "rgba(255,255,255,0.06)",
 
-const CircleButton = styled("button")(
-  ({ danger, success }) => ({
-    width: "58px",
+  border: "1px solid rgba(255,255,255,0.06)",
+  backdropFilter: "blur(18px)",
 
-    height: "58px",
+  boxShadow: danger
+    ? "0 12px 30px rgba(239,68,68,0.28)"
+    : success
+    ? "0 12px 30px rgba(34,197,94,0.22)"
+    : "none",
 
-    borderRadius: "50%",
+  "& svg": {
+    fontSize: mobile ? "22px" : "26px",
+  },
 
-    border: "none",
-
-    cursor: "pointer",
-
-    display: "flex",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    color: "#fff",
-
+  "&:hover": {
+    transform: "translateY(-2px) scale(1.02)",
     background: danger
-      ? "#EF4444"
+      ? "linear-gradient(135deg,#F87171,#EF4444)"
       : success
-      ? "#22C55E"
-      : "#1E293B",
+      ? "linear-gradient(135deg,#4ADE80,#22C55E)"
+      : "rgba(255,255,255,0.10)",
+  },
+}));
 
-    transition: "0.2s",
+const MeetingPanel = ({ selectedFriend }) => {
+  const { isMobile } = useResponsive();
 
-    boxShadow:
-      "0 4px 20px rgba(0,0,0,0.25)",
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
 
-    "&:hover": {
-      transform: "scale(1.08)",
-    },
-  })
-);
-
-// ======================================
-// COMPONENT
-// ======================================
-
-const MeetingPanel = ({
-  selectedFriend,
-}) => {
-  const localVideoRef = useRef();
-
-  const remoteVideoRef = useRef();
-
-  const [micEnabled, setMicEnabled] =
-    useState(true);
-
-  const [
-    cameraEnabled,
-    setCameraEnabled,
-  ] = useState(true);
-
-  // ======================================
-  // INITIAL SETUP
-  // ======================================
+  const [micEnabled, setMicEnabled] = useState(true);
+  const [cameraEnabled, setCameraEnabled] = useState(true);
 
   useEffect(() => {
-    // LOCAL PREVIEW
+    const init = async () => {
+      await getLocalPreview(localVideoRef);
+      setRemoteVideo(remoteVideoRef);
+    };
 
-    getLocalPreview(localVideoRef);
-
-    // REMOTE VIDEO
-
-    setRemoteVideo(remoteVideoRef);
-
-    // SOCKET EVENTS
+    init();
 
     const socket = getSocket();
 
     if (socket) {
-      socket.on(
-        "webrtc-offer",
-        handleWebRTCOffer
-      );
-
-      socket.on(
-        "webrtc-answer",
-        handleWebRTCAnswer
-      );
-
-      socket.on(
-        "webrtc-ice-candidate",
-        handleWebRTCIceCandidate
-      );
+      socket.on("webrtc-offer", handleWebRTCOffer);
+      socket.on("webrtc-answer", handleWebRTCAnswer);
+      socket.on("webrtc-ice-candidate", handleWebRTCIceCandidate);
     }
-
-    // CLEANUP
 
     return () => {
       if (socket) {
-        socket.off(
-          "webrtc-offer",
-          handleWebRTCOffer
-        );
-
-        socket.off(
-          "webrtc-answer",
-          handleWebRTCAnswer
-        );
-
-        socket.off(
-          "webrtc-ice-candidate",
-          handleWebRTCIceCandidate
-        );
+        socket.off("webrtc-offer", handleWebRTCOffer);
+        socket.off("webrtc-answer", handleWebRTCAnswer);
+        socket.off("webrtc-ice-candidate", handleWebRTCIceCandidate);
       }
 
       stopLocalStream();
     };
   }, []);
 
-  // ======================================
-  // TOGGLE MIC
-  // ======================================
-
   const handleToggleMic = () => {
-    const newState = !micEnabled;
+    const state = !micEnabled;
 
-    setMicEnabled(newState);
-
-    toggleMic(newState);
+    setMicEnabled(state);
+    toggleMic(state);
   };
-
-  // ======================================
-  // TOGGLE CAMERA
-  // ======================================
 
   const handleToggleCamera = () => {
-    const newState =
-      !cameraEnabled;
+    const state = !cameraEnabled;
 
-    setCameraEnabled(newState);
-
-    toggleCamera(newState);
+    setCameraEnabled(state);
+    toggleCamera(state);
   };
 
-  // ======================================
-  // START CALL
-  // ======================================
+  const handleStartCall = async () => {
+    if (!selectedFriend?._id) return;
 
-  const handleStartCall =
-    async () => {
-      if (!selectedFriend?._id) {
-        console.log(
-          "❌ No selected friend"
-        );
-
-        return;
-      }
-
-      try {
-        await callToOtherUser(
-          selectedFriend._id
-        );
-
-        console.log(
-          "📞 Calling:",
-          selectedFriend._id
-        );
-      } catch (err) {
-        console.log(
-          "❌ Call start error:",
-          err
-        );
-      }
-    };
-
-  // ======================================
-  // END CALL
-  // ======================================
+    await callToOtherUser(selectedFriend._id);
+  };
 
   const handleEndCall = () => {
     stopLocalStream();
-
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject =
-        null;
-    }
-
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject =
-        null;
-    }
-
-    console.log(
-      "📴 Call ended"
-    );
   };
 
   return (
-    <Container>
-      <Top>
-        {/* HEADER */}
-
-        <Card>
-          <h3>
-            Meeting Room
-          </h3>
-
-          <p
-            style={{
-              marginTop: "10px",
-
-              color: "#94A3B8",
+    <Container mobile={isMobile ? 1 : 0}>
+      <Header mobile={isMobile ? 1 : 0}>
+        <HeaderLeft>
+          <Typography
+            sx={{
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: isMobile ? "19px" : "24px",
             }}
           >
-            Realtime video communication
-            session active.
-          </p>
-        </Card>
+            Video Meeting
+          </Typography>
 
-        {/* VIDEOS */}
+          <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+            HD realtime communication
+          </Typography>
+        </HeaderLeft>
+      </Header>
 
-        <VideoGrid>
-          {/* LOCAL VIDEO */}
+      <VideoArea mobile={isMobile ? 1 : 0}>
+        <Video ref={remoteVideoRef} autoPlay playsInline />
 
-          <VideoContainer>
-            <VideoLabel>
-              You
-            </VideoLabel>
+        <RemoteUserInfo mobile={isMobile ? 1 : 0}>
+          <Typography sx={{ color: "#fff", fontWeight: 600, fontSize: "14px" }}>
+            {selectedFriend?.username || "Remote User"}
+          </Typography>
 
-            <Video
-              ref={localVideoRef}
-              autoPlay
-              muted
-              playsInline
-            />
-          </VideoContainer>
+          <Typography sx={{ color: "#4ADE80", fontSize: "12px" }}>
+            Connected
+          </Typography>
+        </RemoteUserInfo>
 
-          {/* REMOTE VIDEO */}
+        <LocalVideoWrapper mobile={isMobile ? 1 : 0}>
+          <Video ref={localVideoRef} autoPlay muted playsInline />
+        </LocalVideoWrapper>
+      </VideoArea>
 
-          <VideoContainer>
-            <VideoLabel>
-              Remote User
-            </VideoLabel>
+      <Controls mobile={isMobile ? 1 : 0}>
+        <ControlButton mobile={isMobile ? 1 : 0} onClick={handleToggleMic}>
+          {micEnabled ? <MicRoundedIcon /> : <MicOffRoundedIcon />}
+        </ControlButton>
 
-            <Video
-              ref={remoteVideoRef}
-              autoPlay
-              playsInline
-            />
-          </VideoContainer>
-        </VideoGrid>
+        <ControlButton mobile={isMobile ? 1 : 0} onClick={handleToggleCamera}>
+          {cameraEnabled ? <VideocamRoundedIcon /> : <VideocamOffRoundedIcon />}
+        </ControlButton>
 
-        {/* STATUS */}
-
-        <Card>
-          <h3>
-            Connection Status
-          </h3>
-
-          <p
-            style={{
-              marginTop: "10px",
-
-              color: "#22C55E",
-            }}
-          >
-            Camera and microphone ready
-          </p>
-        </Card>
-      </Top>
-
-      {/* CONTROLS */}
-
-      <Controls>
-        {/* MIC */}
-
-        <CircleButton
-          onClick={handleToggleMic}
-        >
-          {micEnabled ? (
-            <MicIcon />
-          ) : (
-            <MicOffIcon />
-          )}
-        </CircleButton>
-
-        {/* CAMERA */}
-
-        <CircleButton
-          onClick={
-            handleToggleCamera
-          }
-        >
-          {cameraEnabled ? (
-            <VideocamIcon />
-          ) : (
-            <VideocamOffIcon />
-          )}
-        </CircleButton>
-
-        {/* START CALL */}
-
-        <CircleButton
-          success
+        <ControlButton
+          success={1}
+          mobile={isMobile ? 1 : 0}
           onClick={handleStartCall}
         >
-          <PhoneIcon />
-        </CircleButton>
+          <PhoneRoundedIcon />
+        </ControlButton>
 
-        {/* END CALL */}
+        <ControlButton mobile={isMobile ? 1 : 0}>
+          <ScreenShareRoundedIcon />
+        </ControlButton>
 
-        <CircleButton
-          danger
+        <ControlButton
+          danger={1}
+          mobile={isMobile ? 1 : 0}
           onClick={handleEndCall}
         >
-          <CallEndIcon />
-        </CircleButton>
+          <CallEndRoundedIcon />
+        </ControlButton>
       </Controls>
     </Container>
   );

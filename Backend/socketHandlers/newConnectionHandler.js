@@ -10,7 +10,9 @@ const newConnectionHandler = (socket) => {
     socketId: socket.id,
   });
 
-  console.log("User connected:", userId);
+  serverStore.emitOnlineUsers();
+
+  console.log("✅ User connected:", userId);
 };
 
 module.exports = newConnectionHandler;

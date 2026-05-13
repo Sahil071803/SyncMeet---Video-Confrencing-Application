@@ -5,54 +5,68 @@ const http = require("http");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
-// =============================
+// =============================================
 // ROUTES
-// =============================
+// =============================================
+
 const authRoutes = require("./routes/authRoutes");
-const friendInvitationRoutes = require(
-  "./routes/friendInvitationRoutes"
-);
+const friendInvitationRoutes = require("./routes/friendInvitationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 
-// =============================
+// =============================================
 // SOCKET SERVER
-// =============================
+// =============================================
+
 const initSocketServer = require("./SocketServer");
 
-// =============================
-// APP SETUP
-// =============================
-const app = express();
+// =============================================
+// APP
+// =============================================
 
+const app = express();
 const server = http.createServer(app);
 
 const PORT = process.env.API_PORT || 5002;
+const HOST = "0.0.0.0";
 
-// =============================
+// =============================================
 // MIDDLEWARE
-// =============================
+// =============================================
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: true,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// =============================
-// HEALTH CHECK ROUTE
-// =============================
+// =============================================
+// HEALTH CHECK
+// =============================================
+
 app.get("/", (req, res) => {
   res.status(200).json({
-    status: "success",
-    message: "Server is running 🚀",
+    success: true,
+    message: "🚀 Video Conferencing Backend Running",
   });
 });
 
-// =============================
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "✅ API is healthy",
+  });
+});
+
+// =============================================
 // API ROUTES
-// =============================
+// =============================================
+
 app.use("/api/auth", authRoutes);
 
 app.use(
@@ -62,75 +76,69 @@ app.use(
 
 app.use("/api/messages", messageRoutes);
 
-// =============================
+// =============================================
 // 404 HANDLER
-// =============================
+// =============================================
+
 app.use((req, res) => {
   res.status(404).json({
-    status: "error",
-    message: "API route not found",
+    success: false,
+    message: "❌ Route not found",
   });
 });
 
-// =============================
+// =============================================
 // GLOBAL ERROR HANDLER
-// =============================
+// =============================================
+
 app.use((err, req, res, next) => {
   console.log("❌ Global Server Error:", err);
 
-  res.status(500).json({
-    status: "error",
-    message: "Internal server error",
+  res.status(err?.status || 500).json({
+    success: false,
+    message: err?.message || "Internal server error",
   });
 });
 
-// =============================
+// =============================================
 // SOCKET INITIALIZATION
-// =============================
+// =============================================
+
 initSocketServer(server);
 
-// =============================
-// DATABASE CONNECTION
-// =============================
-console.log(
-  "📦 Mongo URL:",
-  process.env.MONGO_URL
-);
+// =============================================
+// DATABASE CONNECTION + SERVER START
+// =============================================
 
-mongoose
-  .connect(process.env.MONGO_URL)
-  .then(() => {
-    console.log("✅ MongoDB connected");
+const startServer = async () => {
+  try {
+    console.log("📦 Connecting MongoDB...");
 
-    server.listen(PORT, () => {
-      console.log(
-        `🚀 Server running on http://localhost:${PORT}`
-      );
+    await mongoose.connect(process.env.MONGO_URL);
+
+    console.log("✅ MongoDB Connected");
+
+    server.listen(PORT, HOST, () => {
+      console.log("\n🚀 Server running successfully");
+      console.log(`🌐 Local:   http://localhost:${PORT}`);
+      console.log(`📱 Mobile:  http://10.125.246.112:${PORT}\n`);
     });
-  })
-  .catch((err) => {
-    console.log(
-      "❌ MongoDB connection error:",
-      err
-    );
-  });
+  } catch (err) {
+    console.log("❌ MongoDB Connection Error:", err);
+    process.exit(1);
+  }
+};
 
-// =============================
-// UNHANDLED PROMISE REJECTION
-// =============================
+startServer();
+
+// =============================================
+// PROCESS ERROR HANDLERS
+// =============================================
+
 process.on("unhandledRejection", (err) => {
-  console.log(
-    "❌ Unhandled Rejection:",
-    err
-  );
+  console.log("❌ Unhandled Rejection:", err);
 });
 
-// =============================
-// UNCAUGHT EXCEPTION
-// =============================
 process.on("uncaughtException", (err) => {
-  console.log(
-    "❌ Uncaught Exception:",
-    err
-  );
+  console.log("❌ Uncaught Exception:", err);
 });

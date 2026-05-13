@@ -6,63 +6,55 @@ export const authActions = {
   SET_USER_DETAILS: "AUTH.SET_USER_DETAILS",
 };
 
-// ======================================
-// ACTIONS
-// ======================================
-
 export const getActions = (dispatch) => {
   return {
-    login: (userDetails, navigate) =>
-      dispatch(login(userDetails, navigate)),
-
+    login: (userDetails, navigate) => dispatch(login(userDetails, navigate)),
     register: (userDetails, navigate) =>
       dispatch(register(userDetails, navigate)),
   };
 };
-
-// ======================================
-// SET USER DETAILS
-// ======================================
 
 const setUserDetails = (userDetails) => ({
   type: authActions.SET_USER_DETAILS,
   payload: userDetails,
 });
 
-// ======================================
-// SAFE USER EXTRACTOR (FIXED)
-// ======================================
+const getErrorMessage = (error, fallback = "Something went wrong") => {
+  const data =
+    error?.response?.data ||
+    error?.exception?.response?.data ||
+    error?.data;
 
-const extractUserData = (responseData) => {
-  if (!responseData) return null;
+  if (typeof data === "string") return data;
+  if (data?.message) return data.message;
+  if (error?.message) return error.message;
 
-  console.log("🔥 RAW RESPONSE:", responseData);
+  return fallback;
+};
 
-  const data = responseData?.data || responseData;
+const extractUserData = (response) => {
+  if (!response) return null;
 
-  let user =
-    data?.userDetails ||
-    data?.user ||
-    data ||
-    {};
+  console.log("🔥 RAW AUTH RESPONSE:", response);
 
-  let token =
-    data?.token ||
-    responseData?.token ||
+  const root = response?.data || response;
+
+  const token =
+    root?.token ||
+    root?.data?.token ||
+    root?.user?.token ||
+    root?.userDetails?.token ||
     null;
 
-  // ======================================
-  // NORMALIZE USER ID FIRST
-  // ======================================
+  const user =
+    root?.userDetails ||
+    root?.user ||
+    root?.data?.userDetails ||
+    root?.data?.user ||
+    root?.data ||
+    root;
 
-  const normalizedUser = {
-    ...user,
-    userId: user?._id || user?.id || user?.userId || null,
-  };
-
-  // ======================================
-  // JWT FALLBACK (IMPORTANT FIX)
-  // ======================================
+  let decodedUserId = null;
 
   if (token) {
     try {
@@ -70,47 +62,65 @@ const extractUserData = (responseData) => {
 
       console.log("🔥 DECODED TOKEN:", decoded);
 
-      normalizedUser.userId =
-        decoded.userId ||
-        decoded._id ||
-        decoded.id ||
-        normalizedUser.userId;
-    } catch (err) {
-      console.log("❌ JWT decode failed:", err);
+      decodedUserId =
+        decoded?.userId ||
+        decoded?._id ||
+        decoded?.id ||
+        decoded?.sub ||
+        null;
+    } catch (error) {
+      console.log("❌ JWT decode failed:", error);
     }
   }
 
+  const userId =
+    user?._id ||
+    user?.id ||
+    user?.userId ||
+    root?._id ||
+    root?.id ||
+    root?.userId ||
+    root?.data?._id ||
+    root?.data?.id ||
+    root?.data?.userId ||
+    decodedUserId ||
+    null;
+
+  if (!userId) {
+    console.log("❌ USER ID MISSING IN RESPONSE:", response);
+    return null;
+  }
+
   return {
-    ...normalizedUser,
+    ...user,
+    _id: userId,
+    id: userId,
+    userId,
     token,
   };
 };
 
-// ======================================
-// SHARED AUTH HANDLER
-// ======================================
-
-const handleAuthSuccess = (response, dispatch, navigate, successMsg) => {
-  const userData = extractUserData(response?.data);
+const handleAuthSuccess = (response, dispatch, navigate, successMessage) => {
+  const userData = extractUserData(response);
 
   console.log("🔥 FINAL USER DATA:", userData);
 
   if (!userData?.userId) {
-    console.log("❌ USER ID MISSING");
     dispatch(openAlertMessage("User ID missing from backend response."));
     return;
   }
 
   localStorage.setItem("user", JSON.stringify(userData));
+
+  if (userData.token) {
+    localStorage.setItem("token", userData.token);
+  }
+
   dispatch(setUserDetails(userData));
+  dispatch(openAlertMessage(successMessage));
 
-  console.log("✅ AUTH SUCCESS");
-  navigate("/dashboard");
+  navigate("/welcome", { replace: true });
 };
-
-// ======================================
-// LOGIN
-// ======================================
 
 const login = (userDetails, navigate) => {
   return async (dispatch) => {
@@ -119,22 +129,27 @@ const login = (userDetails, navigate) => {
 
       console.log("🔥 LOGIN RESPONSE:", response);
 
-      if (response.error) {
-        dispatch(openAlertMessage("Login failed. Check credentials."));
+      if (response?.error) {
+        dispatch(
+          openAlertMessage(
+            getErrorMessage(response, "Login failed. Check credentials.")
+          )
+        );
         return;
       }
 
       handleAuthSuccess(response, dispatch, navigate, "Login successful");
-    } catch (err) {
-      console.log("❌ LOGIN ERROR:", err);
-      dispatch(openAlertMessage("Something went wrong during login."));
+    } catch (error) {
+      console.log("❌ LOGIN ERROR:", error);
+
+      dispatch(
+        openAlertMessage(
+          getErrorMessage(error, "Something went wrong during login.")
+        )
+      );
     }
   };
 };
-
-// ======================================
-// REGISTER
-// ======================================
 
 const register = (userDetails, navigate) => {
   return async (dispatch) => {
@@ -143,15 +158,24 @@ const register = (userDetails, navigate) => {
 
       console.log("🔥 REGISTER RESPONSE:", response);
 
-      if (response.error) {
-        dispatch(openAlertMessage("Registration failed. Try again."));
+      if (response?.error) {
+        dispatch(
+          openAlertMessage(
+            getErrorMessage(response, "Registration failed. Try again.")
+          )
+        );
         return;
       }
 
       handleAuthSuccess(response, dispatch, navigate, "Registration successful");
-    } catch (err) {
-      console.log("❌ REGISTER ERROR:", err);
-      dispatch(openAlertMessage("Something went wrong during registration."));
+    } catch (error) {
+      console.log("❌ REGISTER ERROR:", error);
+
+      dispatch(
+        openAlertMessage(
+          getErrorMessage(error, "Something went wrong during registration.")
+        )
+      );
     }
   };
 };

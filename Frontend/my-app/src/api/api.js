@@ -1,44 +1,64 @@
 import axios from "axios";
 import { logout } from "../shared/utils/auth";
 
-const apiClient = axios.create({
-  baseURL: "http://localhost:5002/api",
-  timeout: 5000,
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://10.125.246.112:5002/api";
+
+const API = axios.create({
+  baseURL: API_URL,
+  timeout: 10000,
 });
 
-apiClient.interceptors.request.use(
-  (config) => {
-    const userDetails = localStorage.getItem("user");
+// ==========================================
+// GET TOKEN
+// ==========================================
 
-    if (userDetails) {
-      const parsedUser = JSON.parse(userDetails);
-      const token = parsedUser?.token;
+const getToken = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
 
-      if (token) {
-        config.headers = config.headers || {};
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    return (
+      user?.token ||
+      localStorage.getItem("token") ||
+      null
+    );
+  } catch {
+    return localStorage.getItem("token") || null;
+  }
+};
+
+// ==========================================
+// REQUEST INTERCEPTOR
+// ==========================================
+
+API.interceptors.request.use(
+  (req) => {
+    const token = getToken();
+
+    console.log(
+      "🌐 API REQUEST:",
+      `${API_URL}${req.url}`
+    );
+
+    if (token) {
+      req.headers.Authorization = `Bearer ${token}`;
     }
 
-    return config;
+    return req;
   },
   (error) => Promise.reject(error)
 );
 
-const checkResponseCode = (exception) => {
-  const responseCode = exception?.response?.status;
+// ==========================================
+// RESPONSE INTERCEPTOR
+// ==========================================
 
-  if (responseCode === 401 || responseCode === 403) {
-    logout();
-  }
-};
-
-apiClient.interceptors.response.use(
+API.interceptors.response.use(
   (response) => response,
   (error) => {
-    const responseCode = error?.response?.status;
+    const status = error?.response?.status;
 
-    if (responseCode === 401 || responseCode === 403) {
+    if (status === 401 || status === 403) {
       logout();
     }
 
@@ -46,64 +66,100 @@ apiClient.interceptors.response.use(
   }
 );
 
+// ==========================================
+// ERROR HANDLER
+// ==========================================
+
+const handleApiError = (exception) => {
+  return {
+    error: true,
+    exception,
+    message:
+      exception?.response?.data?.message ||
+      exception?.response?.data ||
+      exception?.message ||
+      "Something went wrong",
+  };
+};
+
+// ==========================================
+// AUTH
+// ==========================================
+
 export const login = async (data) => {
   try {
-    return await apiClient.post("/auth/login", data);
+    return await API.post("/auth/login", data);
   } catch (exception) {
-    checkResponseCode(exception);
-    return {
-      error: true,
-      exception,
-    };
+    return handleApiError(exception);
   }
 };
 
 export const register = async (data) => {
   try {
-    return await apiClient.post("/auth/register", data);
+    return await API.post("/auth/register", data);
   } catch (exception) {
-    checkResponseCode(exception);
-    return {
-      error: true,
-      exception,
-    };
+    return handleApiError(exception);
   }
 };
 
-export const sendFriendInvitation = async (data) => {
+// ==========================================
+// FRIEND INVITATIONS
+// ==========================================
+
+export const sendFriendInvitation =
+  async (data) => {
+    try {
+      return await API.post(
+        "/friend-invitation/invite",
+        data
+      );
+    } catch (exception) {
+      return handleApiError(exception);
+    }
+  };
+
+export const acceptFriendInvitation =
+  async (data) => {
+    try {
+      return await API.post(
+        "/friend-invitation/accept",
+        data
+      );
+    } catch (exception) {
+      return handleApiError(exception);
+    }
+  };
+
+export const rejectFriendInvitation =
+  async (data) => {
+    try {
+      return await API.post(
+        "/friend-invitation/reject",
+        data
+      );
+    } catch (exception) {
+      return handleApiError(exception);
+    }
+  };
+
+// ==========================================
+// REMOVE FRIEND
+// ==========================================
+
+export const removeFriend = async (
+  friendId
+) => {
   try {
-    return await apiClient.post("/friend-invitation/invite", data);
+    return await API.delete(
+      `/friend-invitation/remove/${friendId}`
+    );
   } catch (exception) {
-    checkResponseCode(exception);
-    return {
-      error: true,
-      exception,
-    };
+    return handleApiError(exception);
   }
 };
 
-export const acceptFriendInvitation = async (data) => {
-  try {
-    return await apiClient.post("/friend-invitation/accept", data);
-  } catch (exception) {
-    checkResponseCode(exception);
-    return {
-      error: true,
-      exception,
-    };
-  }
-};
+// ==========================================
+// EXPORT
+// ==========================================
 
-export const rejectFriendInvitation = async (data) => {
-  try {
-    return await apiClient.post("/friend-invitation/reject", data);
-  } catch (exception) {
-    checkResponseCode(exception);
-    return {
-      error: true,
-      exception,
-    };
-  }
-};
-
-export default apiClient;
+export default API;

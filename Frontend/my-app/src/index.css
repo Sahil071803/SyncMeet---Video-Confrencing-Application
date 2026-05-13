@@ -1,39 +1,106 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+/* ======================================
+   GLOBAL RESET
+====================================== */
+
 * {
   margin: 0;
+
   padding: 0;
+
   box-sizing: border-box;
 }
+
+/* ======================================
+   ROOT
+====================================== */
 
 html,
 body,
 #root {
   width: 100%;
+
   height: 100%;
+
+  min-height: 100vh;
 
   overflow: hidden;
 
-  font-family: "Inter", sans-serif;
+  font-family: "Inter",
+    sans-serif;
 
-  background: #0b1020;
+  background: #020617;
 
   color: #ffffff;
 
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing:
+    antialiased;
+
+  -moz-osx-font-smoothing:
+    grayscale;
+
+  text-rendering:
+    optimizeLegibility;
 }
 
+/* ======================================
+   BODY
+====================================== */
+
 body {
-  margin: 0;
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      180deg,
+      #020617 0%,
+      #0f172a 100%
+    );
+
+  overscroll-behavior: none;
 }
+
+/* ======================================
+   ROOT APP
+====================================== */
 
 #root {
   display: flex;
+
+  flex-direction: column;
 }
+
+/* ======================================
+   TYPOGRAPHY
+====================================== */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+}
+
+p {
+  line-height: 1.6;
+}
+
+/* ======================================
+   LINKS
+====================================== */
 
 a {
   text-decoration: none;
+
   color: inherit;
 }
+
+/* ======================================
+   INPUTS
+====================================== */
 
 button,
 input,
@@ -41,8 +108,25 @@ textarea {
   font-family: inherit;
 }
 
+/* ======================================
+   IMAGES
+====================================== */
+
+img,
+video {
+  max-width: 100%;
+
+  display: block;
+}
+
+/* ======================================
+   SCROLLBAR
+====================================== */
+
 ::-webkit-scrollbar {
   width: 6px;
+
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -51,6 +135,7 @@ textarea {
 
 ::-webkit-scrollbar-thumb {
   background: #334155;
+
   border-radius: 10px;
 }
 
@@ -58,7 +143,42 @@ textarea {
   background: #475569;
 }
 
+/* ======================================
+   SELECTION
+====================================== */
+
 ::selection {
-  background: rgba(123, 97, 255, 0.35);
+  background:
+    rgba(139, 92, 246, 0.35);
+
   color: #ffffff;
+}
+
+/* ======================================
+   MOBILE RESPONSIVE
+====================================== */
+
+@media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    overflow: hidden;
+  }
+
+  body {
+    touch-action: manipulation;
+  }
+}
+
+/* ======================================
+   SAFE AREA SUPPORT
+====================================== */
+
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom:
+      env(
+        safe-area-inset-bottom
+      );
+  }
 }

@@ -1,169 +1,171 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
-
-import { styled } from "@mui/system";
-
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { Typography, Box } from "@mui/material";
 
 import DashboardAppBar from "./AppBar/AppBar";
-
 import SideBar from "./SideBar/SideBar";
-
 import FriendsSideBar from "./FriendsSideBar/FriendsSideBar";
-
 import Messenger from "./Messenger/Messenger";
-
 import MeetingPanel from "./MeetingPanel/MeetingPanel";
+import MobileBottomNavigation from "./MobileBottomNavigation";
+
+import useResponsive from "../hooks/useResponsive";
+
+import {
+  DashboardWrapper,
+  ContentWrapper,
+  GlassContainer,
+  FullScreenContent,
+} from "./styles";
 
 import {
   connectWithSocketServer,
   disconnectSocket,
 } from "../realtimeCommunication/socketConnection";
 
-import {
-  registerSocketEvents,
-} from "../realtimeCommunication/socketEvents";
+import { registerSocketEvents } from "../realtimeCommunication/socketEvents";
 
-// ======================================
-// STYLES
-// ======================================
+const PlaceholderPanel = ({ title, subtitle }) => {
+  return (
+    <Box
+      sx={{
+        width: "100%",
+        height: "100%",
+        minHeight: 260,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+        textAlign: "center",
+        p: 3,
+        background: "linear-gradient(180deg,#071028 0%,#0B1120 100%)",
+      }}
+    >
+      <Typography sx={{ color: "#fff", fontSize: 26, fontWeight: 800 }}>
+        {title}
+      </Typography>
 
-const DashboardWrapper = styled("div")({
-  width: "100%",
-
-  height: "100%",
-
-  display: "flex",
-
-  flexDirection: "column",
-
-  overflow: "hidden",
-});
-
-const ContentWrapper = styled("div")({
-  flex: 1,
-
-  display: "grid",
-
-  gridTemplateColumns:
-    "72px 320px 1fr 280px",
-
-  overflow: "hidden",
-});
-
-// ======================================
-// COMPONENT
-// ======================================
+      <Typography
+        sx={{
+          color: "#94A3B8",
+          fontSize: 14,
+          mt: 1,
+          maxWidth: 340,
+          lineHeight: 1.7,
+        }}
+      >
+        {subtitle}
+      </Typography>
+    </Box>
+  );
+};
 
 const Dashboard = () => {
-  const [
-    selectedFriend,
-    setSelectedFriend,
-  ] = useState(null);
+  const { isMobile } = useResponsive();
 
-  const { friends } = useSelector(
-    (state) => state.friends
-  );
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [activeSection, setActiveSection] = useState("meeting");
 
-  // ======================================
-  // DEFAULT SELECT FRIEND
-  // ======================================
+  const friends = useSelector((state) => state.friends?.friends || []);
 
   useEffect(() => {
-    if (
-      friends?.length > 0 &&
-      !selectedFriend
-    ) {
+    if (friends?.length > 0 && !selectedFriend) {
       setSelectedFriend(friends[0]);
     }
   }, [friends, selectedFriend]);
 
-  // ======================================
-  // SOCKET INITIALIZATION
-  // ======================================
-
   useEffect(() => {
-    const storedUser =
-      localStorage.getItem("user");
+    const storedUser = localStorage.getItem("user");
 
     if (!storedUser) return;
 
-    const userDetails =
-      JSON.parse(storedUser);
+    let userDetails = null;
+
+    try {
+      userDetails = JSON.parse(storedUser);
+    } catch {
+      userDetails = null;
+    }
 
     if (!userDetails?.token) return;
 
-    const socket =
-      connectWithSocketServer(
-        userDetails
-      );
+    const socket = connectWithSocketServer(userDetails);
 
     if (socket) {
-      // REGISTER SOCKET EVENTS
-
-      registerSocketEvents(
-        socket
-      );
-
-      // INITIAL DATA
-
-      socket.emit(
-        "get-friends"
-      );
-
-      socket.emit(
-        "get-online-users"
-      );
-
-      socket.emit(
-        "get-pending-invitations"
-      );
+      registerSocketEvents(socket);
     }
 
     return () => {
-      disconnectSocket();
-
-      console.log(
-        "🔌 Socket disconnected"
-      );
+      if (!import.meta.env.DEV) {
+        disconnectSocket();
+      }
     };
   }, []);
 
+  const handleSelectFriend = (friend) => {
+    setSelectedFriend(friend);
+    setActiveSection("messages");
+  };
+
+  const renderActiveScreen = () => {
+    if (activeSection === "participants") {
+      return <FriendsSideBar setSelectedFriend={handleSelectFriend} />;
+    }
+
+    if (activeSection === "messages") {
+      return <Messenger selectedFriend={selectedFriend} />;
+    }
+
+    if (activeSection === "meeting") {
+      return <MeetingPanel selectedFriend={selectedFriend} />;
+    }
+
+    if (activeSection === "alerts") {
+      return (
+        <PlaceholderPanel
+          title="Alerts"
+          subtitle="Notifications and recent activity will appear here."
+        />
+      );
+    }
+
+    if (activeSection === "settings") {
+      return (
+        <PlaceholderPanel
+          title="Settings"
+          subtitle="Profile, notifications and app preferences will appear here."
+        />
+      );
+    }
+
+    return <MeetingPanel selectedFriend={selectedFriend} />;
+  };
+
   return (
-    <DashboardWrapper>
+    <DashboardWrapper mobile={isMobile ? 1 : 0}>
       <DashboardAppBar />
 
-      <ContentWrapper>
-        {/* SIDEBAR */}
+      <ContentWrapper mobile={isMobile ? 1 : 0}>
+        {!isMobile && (
+          <GlassContainer>
+            <SideBar
+              activeSection={activeSection}
+              setActiveSection={setActiveSection}
+            />
+          </GlassContainer>
+        )}
 
-        <SideBar />
-
-        {/* FRIENDS */}
-
-        <FriendsSideBar
-          setSelectedFriend={
-            setSelectedFriend
-          }
-        />
-
-        {/* MESSENGER */}
-
-        <Messenger
-          selectedFriend={
-            selectedFriend
-          }
-        />
-
-        {/* VIDEO PANEL */}
-
-        <MeetingPanel
-          selectedFriend={
-            selectedFriend
-          }
-        />
+        <GlassContainer mobile={isMobile ? 1 : 0} center full>
+          <FullScreenContent>{renderActiveScreen()}</FullScreenContent>
+        </GlassContainer>
       </ContentWrapper>
+
+      {isMobile && (
+        <MobileBottomNavigation
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+        />
+      )}
     </DashboardWrapper>
   );
 };

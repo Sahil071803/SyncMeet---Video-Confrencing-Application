@@ -1,4 +1,5 @@
 import store from "../store/store";
+
 import {
   setOnlineUsers,
   setFriends,
@@ -10,14 +11,22 @@ import { addMessage } from "../store/chatSlice";
 export const registerSocketEvents = (socket) => {
   if (!socket) return;
 
-  // remove old listeners first (VERY IMPORTANT)
   socket.off("online-users");
   socket.off("friends-list");
   socket.off("friends-invitations");
   socket.off("direct-message");
+  socket.off("user-presence-update");
 
   socket.on("online-users", (data) => {
-    store.dispatch(setOnlineUsers(data?.onlineUsers || []));
+    const onlineUsers = Array.isArray(data)
+      ? data
+      : data?.onlineUsers || [];
+
+    store.dispatch(setOnlineUsers(onlineUsers));
+  });
+
+  socket.on("user-presence-update", () => {
+    socket.emit("get-online-users");
   });
 
   socket.on("friends-list", (data) => {
@@ -26,9 +35,7 @@ export const registerSocketEvents = (socket) => {
 
   socket.on("friends-invitations", (data) => {
     store.dispatch(
-      setPendingFriendsInvitations(
-        data?.pendingInvitations || []
-      )
+      setPendingFriendsInvitations(data?.pendingInvitations || [])
     );
   });
 
