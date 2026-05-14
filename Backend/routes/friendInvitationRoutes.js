@@ -17,6 +17,10 @@ const invitationDecisionSchema = Joi.object({
   id: Joi.string().hex().length(24).required(),
 });
 
+const acceptByTokenSchema = Joi.object({
+  token: Joi.string().min(32).required(),
+});
+
 const removeFriendSchema = Joi.object({
   id: Joi.string().hex().length(24).required(),
 });
@@ -32,6 +36,12 @@ router.post(
   "/accept",
   auth,
   validator.body(invitationDecisionSchema),
+  friendInvitationControllers.postAccept
+);
+
+router.post(
+  "/accept-token",
+  validator.body(acceptByTokenSchema),
   friendInvitationControllers.postAccept
 );
 

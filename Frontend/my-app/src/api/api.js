@@ -142,6 +142,14 @@ export const rejectFriendInvitation =
     }
   };
 
+export const acceptInvitationByToken = async (data) => {
+  try {
+    return await API.post("/friend-invitation/accept-token", data);
+  } catch (exception) {
+    return handleApiError(exception);
+  }
+};
+
 // ==========================================
 // REMOVE FRIEND
 // ==========================================

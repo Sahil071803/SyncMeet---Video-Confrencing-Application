@@ -5,76 +5,71 @@ const http = require("http");
 const cors = require("cors");
 const mongoose = require("mongoose");
 
-// =============================================
-// ROUTES
-// =============================================
-
 const authRoutes = require("./routes/authRoutes");
 const friendInvitationRoutes = require("./routes/friendInvitationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 
-// =============================================
-// SOCKET SERVER
-// =============================================
-
 const initSocketServer = require("./SocketServer");
-
-// =============================================
-// APP
-// =============================================
 
 const app = express();
 const server = http.createServer(app);
 
-// =============================================
-// ENVIRONMENT VARIABLES
-// =============================================
-
 const PORT = process.env.PORT || 5002;
 
-const CLIENT_URL =
-  process.env.CLIENT_URL || "*";
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://sync-meet-video-confrencing-applica.vercel.app",
+  "https://syncmeet-video-confrencing-applica.vercel.app",
+  "https://syncmeet-video-confrencing-application.vercel.app",
+];
 
-// =============================================
-// MIDDLEWARE
-// =============================================
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
 
-app.use(
-  cors({
-    origin: CLIENT_URL,
-    credentials: true,
-    methods: [
-      "GET",
-      "POST",
-      "PUT",
-      "DELETE",
-      "PATCH",
-      "OPTIONS",
-    ],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-    ],
-  })
-);
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
 
-app.use(express.json());
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log("❌ Blocked by CORS:", origin);
+
+    return callback(
+      new Error(`CORS not allowed for origin: ${origin}`)
+    );
+  },
+
+  credentials: true,
+
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+
+app.use(express.json({ limit: "10mb" }));
 
 app.use(
   express.urlencoded({
     extended: true,
+    limit: "10mb",
   })
 );
-
-// =============================================
-// HEALTH CHECK
-// =============================================
 
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message:
-      "🚀 SyncMeet Backend Running Successfully",
+    message: "🚀 SyncMeet Backend Running Successfully",
+    environment: process.env.NODE_ENV || "development",
   });
 });
 
@@ -82,123 +77,69 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
     message: "✅ API is healthy",
+    allowedOrigins,
   });
 });
 
-// =============================================
-// API ROUTES
-// =============================================
-
 app.use("/api/auth", authRoutes);
 
-app.use(
-  "/api/friend-invitation",
-  friendInvitationRoutes
-);
+app.use("/api/friend-invitation", friendInvitationRoutes);
 
 app.use("/api/messages", messageRoutes);
-
-// =============================================
-// 404 HANDLER
-// =============================================
 
 app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "❌ Route not found",
+    path: req.originalUrl,
   });
 });
 
-// =============================================
-// GLOBAL ERROR HANDLER
-// =============================================
-
 app.use((err, req, res, next) => {
-  console.error(
-    "❌ Global Server Error:",
-    err
-  );
+  console.error("❌ Global Server Error:", err.message);
 
   res.status(err?.status || 500).json({
     success: false,
-    message:
-      err?.message ||
-      "Internal server error",
+    message: err?.message || "Internal server error",
   });
 });
 
-// =============================================
-// SOCKET INITIALIZATION
-// =============================================
-
 initSocketServer(server);
-
-// =============================================
-// DATABASE CONNECTION + SERVER START
-// =============================================
 
 const startServer = async () => {
   try {
+    if (!process.env.MONGO_URL) {
+      throw new Error("MONGO_URL missing in .env");
+    }
+
     console.log("📦 Connecting MongoDB...");
 
-    await mongoose.connect(
-      process.env.MONGO_URL
-    );
+    await mongoose.connect(process.env.MONGO_URL);
 
-    console.log(
-      "✅ MongoDB Connected Successfully"
-    );
+    console.log("✅ MongoDB Connected Successfully");
 
     server.listen(PORT, () => {
-      console.log(
-        `🚀 Server running on port ${PORT}`
-      );
-
-      console.log(
-        `🌍 Environment: ${
-          process.env.NODE_ENV ||
-          "development"
-        }`
-      );
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log("✅ Allowed Origins:", allowedOrigins);
     });
   } catch (err) {
-    console.error(
-      "❌ MongoDB Connection Error:",
-      err
-    );
-
+    console.error("❌ MongoDB Connection Error:", err.message);
     process.exit(1);
   }
 };
 
 startServer();
 
-// =============================================
-// PROCESS ERROR HANDLERS
-// =============================================
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Rejection:", err);
 
-process.on(
-  "unhandledRejection",
-  (err) => {
-    console.error(
-      "❌ Unhandled Rejection:",
-      err
-    );
-
-    server.close(() => {
-      process.exit(1);
-    });
-  }
-);
-
-process.on(
-  "uncaughtException",
-  (err) => {
-    console.error(
-      "❌ Uncaught Exception:",
-      err
-    );
-
+  server.close(() => {
     process.exit(1);
-  }
-);
+  });
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+  process.exit(1);
+});

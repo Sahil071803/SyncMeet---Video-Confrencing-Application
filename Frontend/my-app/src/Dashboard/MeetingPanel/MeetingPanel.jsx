@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { styled } from "@mui/system";
-
 import { Typography, IconButton } from "@mui/material";
 
 import useResponsive from "../../hooks/useResponsive";
@@ -24,6 +23,7 @@ import {
   handleWebRTCOffer,
   handleWebRTCAnswer,
   handleWebRTCIceCandidate,
+  startScreenShare,
 } from "../../realtimeCommunication/webRTCHandler";
 
 import { getSocket } from "../../realtimeCommunication/socketConnection";
@@ -82,8 +82,11 @@ const Video = styled("video")({
   width: "100%",
   height: "100%",
   objectFit: "cover",
-  background: "#000",
+  backgroundColor: "#000",
   borderRadius: "18px",
+  transform: "scaleX(-1)",
+  WebkitTransform: "scaleX(-1)",
+  backfaceVisibility: "hidden",
 });
 
 const RemoteUserInfo = styled("div", {
@@ -132,8 +135,11 @@ const Controls = styled("div", {
 
 const ControlButton = styled(IconButton, {
   shouldForwardProp: (prop) =>
-    prop !== "danger" && prop !== "success" && prop !== "mobile",
-})(({ danger, success, mobile }) => ({
+    prop !== "danger" &&
+    prop !== "success" &&
+    prop !== "active" &&
+    prop !== "mobile",
+})(({ danger, success, active, mobile }) => ({
   width: mobile ? "50px" : "64px",
   height: mobile ? "50px" : "64px",
   borderRadius: mobile ? "18px" : "20px",
@@ -144,6 +150,8 @@ const ControlButton = styled(IconButton, {
     ? "linear-gradient(135deg,#EF4444,#DC2626)"
     : success
     ? "linear-gradient(135deg,#22C55E,#16A34A)"
+    : active
+    ? "linear-gradient(135deg,#8B5CF6,#7C3AED)"
     : "rgba(255,255,255,0.06)",
 
   border: "1px solid rgba(255,255,255,0.06)",
@@ -153,6 +161,8 @@ const ControlButton = styled(IconButton, {
     ? "0 12px 30px rgba(239,68,68,0.28)"
     : success
     ? "0 12px 30px rgba(34,197,94,0.22)"
+    : active
+    ? "0 12px 30px rgba(139,92,246,0.22)"
     : "none",
 
   "& svg": {
@@ -165,7 +175,14 @@ const ControlButton = styled(IconButton, {
       ? "linear-gradient(135deg,#F87171,#EF4444)"
       : success
       ? "linear-gradient(135deg,#4ADE80,#22C55E)"
+      : active
+      ? "linear-gradient(135deg,#A78BFA,#8B5CF6)"
       : "rgba(255,255,255,0.10)",
+  },
+
+  "&.Mui-disabled": {
+    opacity: 0.45,
+    color: "#fff",
   },
 }));
 
@@ -177,22 +194,31 @@ const MeetingPanel = ({ selectedFriend }) => {
 
   const [micEnabled, setMicEnabled] = useState(true);
   const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [screenSharing, setScreenSharing] = useState(false);
+  const [callStarted, setCallStarted] = useState(false);
 
   useEffect(() => {
+    let socket = null;
+
     const init = async () => {
       await getLocalPreview(localVideoRef);
+
       setRemoteVideo(remoteVideoRef);
+
+      socket = getSocket();
+
+      if (socket) {
+        socket.off("webrtc-offer", handleWebRTCOffer);
+        socket.off("webrtc-answer", handleWebRTCAnswer);
+        socket.off("webrtc-ice-candidate", handleWebRTCIceCandidate);
+
+        socket.on("webrtc-offer", handleWebRTCOffer);
+        socket.on("webrtc-answer", handleWebRTCAnswer);
+        socket.on("webrtc-ice-candidate", handleWebRTCIceCandidate);
+      }
     };
 
     init();
-
-    const socket = getSocket();
-
-    if (socket) {
-      socket.on("webrtc-offer", handleWebRTCOffer);
-      socket.on("webrtc-answer", handleWebRTCAnswer);
-      socket.on("webrtc-ice-candidate", handleWebRTCIceCandidate);
-    }
 
     return () => {
       if (socket) {
@@ -206,27 +232,56 @@ const MeetingPanel = ({ selectedFriend }) => {
   }, []);
 
   const handleToggleMic = () => {
-    const state = !micEnabled;
+    const nextState = !micEnabled;
 
-    setMicEnabled(state);
-    toggleMic(state);
+    setMicEnabled(nextState);
+    toggleMic(nextState);
   };
 
   const handleToggleCamera = () => {
-    const state = !cameraEnabled;
+    const nextState = !cameraEnabled;
 
-    setCameraEnabled(state);
-    toggleCamera(state);
+    setCameraEnabled(nextState);
+    toggleCamera(nextState);
   };
 
   const handleStartCall = async () => {
-    if (!selectedFriend?._id) return;
+    if (callStarted) return;
 
-    await callToOtherUser(selectedFriend._id);
+    if (!selectedFriend?._id) {
+      console.log("❌ No friend selected");
+      return;
+    }
+
+    const started = await callToOtherUser(selectedFriend._id);
+
+    if (started) {
+      setCallStarted(true);
+    }
   };
 
-  const handleEndCall = () => {
+  const handleScreenShare = async () => {
+    if (!callStarted) return;
+
+    const started = await startScreenShare(localVideoRef);
+
+    if (started) {
+      setScreenSharing(true);
+    }
+  };
+
+  const handleEndCall = async () => {
     stopLocalStream();
+
+    setCallStarted(false);
+    setScreenSharing(false);
+    setMicEnabled(true);
+    setCameraEnabled(true);
+
+    setTimeout(() => {
+      getLocalPreview(localVideoRef);
+      setRemoteVideo(remoteVideoRef);
+    }, 400);
   };
 
   return (
@@ -243,48 +298,94 @@ const MeetingPanel = ({ selectedFriend }) => {
             Video Meeting
           </Typography>
 
-          <Typography sx={{ color: "#94A3B8", fontSize: "13px" }}>
+          <Typography
+            sx={{
+              color: "#94A3B8",
+              fontSize: "13px",
+            }}
+          >
             HD realtime communication
           </Typography>
         </HeaderLeft>
       </Header>
 
       <VideoArea mobile={isMobile ? 1 : 0}>
-        <Video ref={remoteVideoRef} autoPlay playsInline />
+        <Video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          muted={false}
+        />
 
         <RemoteUserInfo mobile={isMobile ? 1 : 0}>
-          <Typography sx={{ color: "#fff", fontWeight: 600, fontSize: "14px" }}>
-            {selectedFriend?.username || "Remote User"}
+          <Typography
+            sx={{
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "14px",
+            }}
+          >
+            {selectedFriend?.username ||
+              selectedFriend?.name ||
+              "Remote User"}
           </Typography>
 
-          <Typography sx={{ color: "#4ADE80", fontSize: "12px" }}>
-            Connected
+          <Typography
+            sx={{
+              color: callStarted ? "#4ADE80" : "#FACC15",
+              fontSize: "12px",
+            }}
+          >
+            {callStarted ? "Connected" : "Ready"}
           </Typography>
         </RemoteUserInfo>
 
         <LocalVideoWrapper mobile={isMobile ? 1 : 0}>
-          <Video ref={localVideoRef} autoPlay muted playsInline />
+          <Video
+            ref={localVideoRef}
+            autoPlay
+            muted
+            playsInline
+          />
         </LocalVideoWrapper>
       </VideoArea>
 
       <Controls mobile={isMobile ? 1 : 0}>
-        <ControlButton mobile={isMobile ? 1 : 0} onClick={handleToggleMic}>
+        <ControlButton
+          mobile={isMobile ? 1 : 0}
+          active={!micEnabled ? 1 : 0}
+          onClick={handleToggleMic}
+        >
           {micEnabled ? <MicRoundedIcon /> : <MicOffRoundedIcon />}
         </ControlButton>
 
-        <ControlButton mobile={isMobile ? 1 : 0} onClick={handleToggleCamera}>
-          {cameraEnabled ? <VideocamRoundedIcon /> : <VideocamOffRoundedIcon />}
+        <ControlButton
+          mobile={isMobile ? 1 : 0}
+          active={!cameraEnabled ? 1 : 0}
+          onClick={handleToggleCamera}
+        >
+          {cameraEnabled ? (
+            <VideocamRoundedIcon />
+          ) : (
+            <VideocamOffRoundedIcon />
+          )}
         </ControlButton>
 
         <ControlButton
           success={1}
           mobile={isMobile ? 1 : 0}
           onClick={handleStartCall}
+          disabled={!selectedFriend?._id || callStarted}
         >
           <PhoneRoundedIcon />
         </ControlButton>
 
-        <ControlButton mobile={isMobile ? 1 : 0}>
+        <ControlButton
+          mobile={isMobile ? 1 : 0}
+          active={screenSharing ? 1 : 0}
+          onClick={handleScreenShare}
+          disabled={!callStarted}
+        >
           <ScreenShareRoundedIcon />
         </ControlButton>
 

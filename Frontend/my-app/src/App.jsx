@@ -13,6 +13,7 @@ import LoginPage from "./authPages/LoginPage/LoginPage";
 import RegisterPage from "./authPages/RegisterPage/RegisterPage";
 import Dashboard from "./Dashboard/Dashboard";
 import WelcomeScreen from "./pages/WelcomeScreen";
+import AcceptInvite from "./pages/AcceptInvite";
 
 import AlertNotification from "./shared/components/AlertNotification";
 
@@ -27,10 +28,17 @@ const AppContainer = styled("div")({
   overflow: "hidden",
 });
 
-const ProtectedRoute = ({ children }) => {
-  const user = localStorage.getItem("user");
+const isUserLoggedIn = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    return Boolean(user?.token || localStorage.getItem("token"));
+  } catch {
+    return Boolean(localStorage.getItem("token"));
+  }
+};
 
-  if (!user) {
+const ProtectedRoute = ({ children }) => {
+  if (!isUserLoggedIn()) {
     return <Navigate to="/login" replace />;
   }
 
@@ -38,9 +46,7 @@ const ProtectedRoute = ({ children }) => {
 };
 
 const PublicRoute = ({ children }) => {
-  const user = localStorage.getItem("user");
-
-  if (user) {
+  if (isUserLoggedIn()) {
     return <Navigate to="/welcome" replace />;
   }
 
@@ -89,6 +95,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/invite/:token" element={<AcceptInvite />} />
 
           <Route path="*" element={<Navigate to="/register" replace />} />
         </Routes>
