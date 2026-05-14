@@ -1,12 +1,21 @@
 import axios from "axios";
 import { logout } from "../shared/utils/auth";
 
+// ==========================================
+// API BASE URL
+// ==========================================
+
 const API_URL =
-  import.meta.env.VITE_API_URL || "http://10.125.246.112:5002/api";
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5002/api";
+
+// ==========================================
+// AXIOS INSTANCE
+// ==========================================
 
 const API = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 15000,
 });
 
 // ==========================================
@@ -15,7 +24,9 @@ const API = axios.create({
 
 const getToken = () => {
   try {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = JSON.parse(
+      localStorage.getItem("user")
+    );
 
     return (
       user?.token ||
@@ -35,10 +46,9 @@ API.interceptors.request.use(
   (req) => {
     const token = getToken();
 
-    console.log(
-      "🌐 API REQUEST:",
-      `${API_URL}${req.url}`
-    );
+    const fullUrl = `${API_URL}${req.url}`;
+
+    console.log("🌐 API REQUEST:", fullUrl);
 
     if (token) {
       req.headers.Authorization = `Bearer ${token}`;
@@ -46,6 +56,7 @@ API.interceptors.request.use(
 
     return req;
   },
+
   (error) => Promise.reject(error)
 );
 
@@ -55,8 +66,21 @@ API.interceptors.request.use(
 
 API.interceptors.response.use(
   (response) => response,
+
   (error) => {
     const status = error?.response?.status;
+
+    const message =
+      error?.response?.data?.message ||
+      error?.response?.data ||
+      error?.message ||
+      "Something went wrong";
+
+    console.log("❌ API ERROR:", {
+      status,
+      message,
+      url: error?.config?.url,
+    });
 
     if (status === 401 || status === 403) {
       logout();
@@ -74,6 +98,7 @@ const handleApiError = (exception) => {
   return {
     error: true,
     exception,
+    status: exception?.response?.status,
     message:
       exception?.response?.data?.message ||
       exception?.response?.data ||
@@ -106,45 +131,53 @@ export const register = async (data) => {
 // FRIEND INVITATIONS
 // ==========================================
 
-export const sendFriendInvitation =
-  async (data) => {
-    try {
-      return await API.post(
-        "/friend-invitation/invite",
-        data
-      );
-    } catch (exception) {
-      return handleApiError(exception);
-    }
-  };
-
-export const acceptFriendInvitation =
-  async (data) => {
-    try {
-      return await API.post(
-        "/friend-invitation/accept",
-        data
-      );
-    } catch (exception) {
-      return handleApiError(exception);
-    }
-  };
-
-export const rejectFriendInvitation =
-  async (data) => {
-    try {
-      return await API.post(
-        "/friend-invitation/reject",
-        data
-      );
-    } catch (exception) {
-      return handleApiError(exception);
-    }
-  };
-
-export const acceptInvitationByToken = async (data) => {
+export const sendFriendInvitation = async (
+  data
+) => {
   try {
-    return await API.post("/friend-invitation/accept-token", data);
+    return await API.post(
+      "/friend-invitation/invite",
+      data
+    );
+  } catch (exception) {
+    return handleApiError(exception);
+  }
+};
+
+export const acceptFriendInvitation = async (
+  data
+) => {
+  try {
+    return await API.post(
+      "/friend-invitation/accept",
+      data
+    );
+  } catch (exception) {
+    return handleApiError(exception);
+  }
+};
+
+export const rejectFriendInvitation = async (
+  data
+) => {
+  try {
+    return await API.post(
+      "/friend-invitation/reject",
+      data
+    );
+  } catch (exception) {
+    return handleApiError(exception);
+  }
+};
+
+export const acceptInvitationByToken = async (
+  data
+) => {
+  try {
+    return await API.post(
+      "/friend-invitation/accept-token",
+      data
+    );
   } catch (exception) {
     return handleApiError(exception);
   }
