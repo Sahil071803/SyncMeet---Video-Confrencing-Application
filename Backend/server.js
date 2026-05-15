@@ -72,7 +72,26 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
+    hasEmailUser: !!process.env.EMAIL_USER,
+    hasEmailPass: !!process.env.EMAIL_PASS,
+    hasFrontendUrl: !!process.env.FRONTEND_URL,
+    nodeEnv: process.env.NODE_ENV,
   });
+});
+
+// Debug: test email sending on Render
+app.get("/api/test-email", async (req, res) => {
+  try {
+    const { sendInvitationEmail } = require("./services/emailService");
+    const result = await sendInvitationEmail({
+      receiverMailAddress: "onlycoding66@gmail.com",
+      invitationLink: "https://sync-meet-video-confrencing-applica.vercel.app/invite/test",
+      senderName: "SyncMeet Debug",
+    });
+    res.json({ success: true, emailSent: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 app.use("/api/auth", authRoutes);
