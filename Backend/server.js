@@ -91,8 +91,8 @@ app.get("/api/test-email", async (req, res) => {
       connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
     });
     const info = await transporter.sendMail({
-      from: '"SyncMeet" <onlycoding66@gmail.com>',
-      to: "onlycoding66@gmail.com",
+      from: '"SyncMeet" <sahilatram1226@gmail.com>',
+      to: "sahilatram1226@gmail.com",
       subject: "SyncMeet SendGrid Test",
       text: "SendGrid works from Render!",
     });

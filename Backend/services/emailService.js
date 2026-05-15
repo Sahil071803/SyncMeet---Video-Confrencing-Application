@@ -64,7 +64,7 @@ const sendInvitationEmail = async ({
     const safeInvitationLink = escapeHtml(invitationLink);
 
     await transporter.sendMail({
-      from: `"SyncMeet Application" <onlycoding66@gmail.com>`,
+      from: `"SyncMeet Application" <sahilatram1226@gmail.com>`,
       to: receiverMailAddress,
       subject: "You're Invited To Join SyncMeet 🚀",
 
