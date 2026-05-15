@@ -3,10 +3,10 @@ const nodemailer = require("nodemailer");
 const createTransporter = () => {
   // SendGrid (recommended - works from cloud providers like Render)
   if (process.env.SENDGRID_API_KEY) {
-    console.log("📧 Using SendGrid SMTP");
+    console.log("📧 Using SendGrid SMTP on port 2525");
     return nodemailer.createTransport({
       host: "smtp.sendgrid.net",
-      port: 587,
+      port: 2525,
       secure: false,
       auth: {
         user: "apikey",
