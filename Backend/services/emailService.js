@@ -1,13 +1,5 @@
 const { Resend } = require("resend");
 
-const escapeHtml = (value = "") =>
-  String(value)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-
 const sendViaResend = async ({ to, subject, html }) => {
   const apiKey = (process.env.RESEND_API_KEY || "").trim();
   if (!apiKey) throw new Error("Set RESEND_API_KEY in Render Dashboard → Environment");
