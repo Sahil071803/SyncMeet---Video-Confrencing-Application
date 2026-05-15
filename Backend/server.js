@@ -124,7 +124,7 @@ app.get("/api/test-email", async (req, res) => {
     }
   }
 
-  res.json({ host, tcp: tcpResults, send: sendResult });
+  res.json({ host, user: user, tcp: tcpResults, send: sendResult });
 });
 
 app.use("/api/auth", authRoutes);
