@@ -80,16 +80,24 @@ app.get("/api/health", (req, res) => {
 
 // Debug: test email delivery
 app.get("/api/test-email", async (req, res) => {
-  const { sendInvitationEmail } = require("./services/emailService");
   try {
-    const result = await sendInvitationEmail({
-      receiverMailAddress: "sahilatram1226@gmail.com",
-      invitationLink: "https://sync-meet-video-confrencing-applica.vercel.app/invite/test",
-      senderName: "SyncMeet Test",
+    const nodemailer = require("nodemailer");
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
     });
-    res.json({ sent: result, smtpHost: process.env.SMTP_HOST || "not set" });
+    const info = await transporter.sendMail({
+      from: '"SyncMeet" <sahilatram1226@gmail.com>',
+      to: "sahilatram1226@gmail.com",
+      subject: "SyncMeet Test",
+      text: "Brevo email works from Render!",
+    });
+    res.json({ sent: true, messageId: info.messageId });
   } catch (e) {
-    res.json({ sent: false, error: e.message, smtpHost: process.env.SMTP_HOST || "not set" });
+    res.json({ sent: false, error: e.message, code: e.code, host: process.env.SMTP_HOST });
   }
 });
 
