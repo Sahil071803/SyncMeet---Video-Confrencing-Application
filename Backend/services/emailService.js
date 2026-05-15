@@ -1,10 +1,31 @@
 const nodemailer = require("nodemailer");
 
 const createTransporter = () => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error("EMAIL_USER or EMAIL_PASS missing in .env");
+  // SendGrid (preferred - works from cloud providers like Render)
+  if (process.env.SENDGRID_API_KEY) {
+    console.log("📧 Using SendGrid SMTP");
+    return nodemailer.createTransport({
+      host: "smtp.sendgrid.net",
+      port: 587,
+      secure: false,
+      auth: {
+        user: "apikey",
+        pass: process.env.SENDGRID_API_KEY,
+      },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
   }
 
+  // Gmail SMTP (works locally, may be blocked from cloud providers)
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    throw new Error(
+      "Set SENDGRID_API_KEY (recommended) or EMAIL_USER + EMAIL_PASS in Render env vars"
+    );
+  }
+
+  console.log("📧 Using Gmail SMTP");
   return nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,

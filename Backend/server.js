@@ -72,8 +72,7 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    hasEmailUser: !!process.env.EMAIL_USER,
-    hasEmailPass: !!process.env.EMAIL_PASS,
+    emailProvider: process.env.SENDGRID_API_KEY ? "sendgrid" : (process.env.EMAIL_USER ? "gmail" : "none"),
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
@@ -137,9 +136,10 @@ const startServer = async () => {
     console.log("✅ MongoDB Connected Successfully");
 
     // Warn about missing email config
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.log("⚠️  EMAIL_USER / EMAIL_PASS not set — invitation emails will fail");
-      console.log("   ➜ Add them in Render Dashboard → Environment Variables");
+    if (!process.env.SENDGRID_API_KEY && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
+      console.log("⚠️  No email provider configured — invitation emails will fail");
+      console.log("   ➜ Recommended: Add SENDGRID_API_KEY in Render Dashboard → Environment Variables");
+      console.log("   ➜ Alternative: Add EMAIL_USER + EMAIL_PASS (Gmail App Password)");
     }
 
     if (!process.env.FRONTEND_URL) {
