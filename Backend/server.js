@@ -78,60 +78,28 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Debug: test SMTP connectivity and SendGrid email delivery
-const net = require("net");
+// Debug: test SendGrid email delivery
 app.get("/api/test-email", async (req, res) => {
-  const nodemailer = require("nodemailer");
-  const sendgridResult = {};
-
-  if (process.env.SENDGRID_API_KEY) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: "smtp.sendgrid.net",
-        port: 2525,
-        secure: false,
-        auth: { user: "apikey", pass: process.env.SENDGRID_API_KEY },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-      });
-      const info = await transporter.sendMail({
-        from: `"SyncMeet" <onlycoding66@gmail.com>`,
-        to: "onlycoding66@gmail.com",
-        subject: "SyncMeet SendGrid Test",
-        text: "If you see this, SendGrid works from Render!",
-      });
-      sendgridResult.success = true;
-      sendgridResult.messageId = info.messageId;
-    } catch (e) {
-      sendgridResult.success = false;
-      sendgridResult.error = e.message;
-    }
-  } else {
-    sendgridResult.skipped = "SENDGRID_API_KEY not set";
+  if (!process.env.SENDGRID_API_KEY) {
+    return res.json({ status: "SENDGRID_API_KEY not set — emails won't send" });
   }
-
-  const hosts = [
-    { name: "SG:2525", host: "smtp.sendgrid.net", port: 2525 },
-    { name: "SG:587", host: "smtp.sendgrid.net", port: 587 },
-    { name: "GM:587", host: "smtp.gmail.com", port: 587 },
-    { name: "MG:2525", host: "smtp.mailgun.org", port: 2525 },
-    { name: "SES:2587", host: "email-smtp.us-east-1.amazonaws.com", port: 2587 },
-  ];
-  const results = await Promise.all(hosts.map(async (h) => {
-    try {
-      await new Promise((resolve, reject) => {
-        const s = net.createConnection(h.port, h.host, () => { s.end(); resolve(); });
-        s.on("error", reject);
-        s.setTimeout(5000, () => { s.destroy(); reject(new Error("timeout")); });
-      });
-      return { host: h.name, reachable: true };
-    } catch (e) {
-      return { host: h.name, reachable: false, error: e.message };
-    }
-  }));
-
-  res.json({ results, sendgridTest: sendgridResult, hasApiKey: !!process.env.SENDGRID_API_KEY });
+  try {
+    const nodemailer = require("nodemailer");
+    const transporter = nodemailer.createTransport({
+      host: "smtp.sendgrid.net", port: 2525, secure: false,
+      auth: { user: "apikey", pass: process.env.SENDGRID_API_KEY },
+      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
+    });
+    const info = await transporter.sendMail({
+      from: '"SyncMeet" <onlycoding66@gmail.com>',
+      to: "onlycoding66@gmail.com",
+      subject: "SyncMeet SendGrid Test",
+      text: "SendGrid works from Render!",
+    });
+    res.json({ success: true, messageId: info.messageId });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message, code: e.code });
+  }
 });
 
 app.use("/api/auth", authRoutes);
