@@ -78,35 +78,28 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Debug: test email sending on Render
+// Debug: test SMTP connectivity from Render
+const net = require("net");
 app.get("/api/test-email", async (req, res) => {
-  try {
-    const nodemailer = require("nodemailer");
-    const dns = require("dns");
-    const { promisify } = require("util");
-    const [ip] = await promisify(dns.resolve4)("smtp.gmail.com");
-    console.log("📧 test-email: resolved Gmail SMTP to", ip);
-    const transporter = nodemailer.createTransport({
-      host: ip,
-      port: 587,
-      secure: false,
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
-    });
-    const info = await transporter.sendMail({
-      from: `"SyncMeet Debug" <${process.env.EMAIL_USER}>`,
-      to: "onlycoding66@gmail.com",
-      subject: "SyncMeet Debug Email",
-      text: "If you see this, email works from Render",
-    });
-    console.log("✅ test-email sent:", info.messageId);
-    res.json({ success: true, messageId: info.messageId, resolvedIp: ip });
-  } catch (err) {
-    console.log("❌ test-email error:", err);
-    res.status(500).json({ success: false, error: err.message, code: err.code, command: err.command });
+  const results = [];
+  const hosts = [
+    { name: "smtp.gmail.com:587", host: "smtp.gmail.com", port: 587 },
+    { name: "smtp.sendgrid.net:587", host: "smtp.sendgrid.net", port: 587 },
+    { name: "smtp.mailgun.org:587", host: "smtp.mailgun.org", port: 587 },
+  ];
+  for (const h of hosts) {
+    try {
+      await new Promise((resolve, reject) => {
+        const s = net.createConnection(h.port, h.host, () => { s.end(); resolve(); });
+        s.on("error", reject);
+        s.setTimeout(5000, () => { s.destroy(); reject(new Error("timeout")); });
+      });
+      results.push({ host: h.name, reachable: true });
+    } catch (e) {
+      results.push({ host: h.name, reachable: false, error: e.message });
+    }
   }
+  res.json({ results, emailProvider: process.env.SENDGRID_API_KEY ? "sendgrid" : (process.env.EMAIL_USER ? "gmail" : "none") });
 });
 
 app.use("/api/auth", authRoutes);

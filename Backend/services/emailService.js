@@ -1,15 +1,7 @@
 const nodemailer = require("nodemailer");
-const dns = require("dns");
-const { promisify } = require("util");
-const resolve4 = promisify(dns.resolve4);
-
-const SMTP_HOST = "smtp.gmail.com";
-const SMTP_PORT = 587;
-
-let smtpHostResolved = SMTP_HOST;
 
 const createTransporter = () => {
-  // SendGrid (preferred - works from cloud providers like Render)
+  // SendGrid (recommended - works from cloud providers like Render)
   if (process.env.SENDGRID_API_KEY) {
     console.log("📧 Using SendGrid SMTP");
     return nodemailer.createTransport({
@@ -26,17 +18,17 @@ const createTransporter = () => {
     });
   }
 
-  // Gmail SMTP
+  // Gmail SMTP (works locally, blocked from some cloud providers)
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     throw new Error(
       "Set SENDGRID_API_KEY (recommended) or EMAIL_USER + EMAIL_PASS in Render env vars"
     );
   }
 
-  console.log("📧 Using Gmail SMTP via:", smtpHostResolved);
+  console.log("📧 Using Gmail SMTP");
   return nodemailer.createTransport({
-    host: smtpHostResolved,
-    port: SMTP_PORT,
+    host: "smtp.gmail.com",
+    port: 587,
     secure: false,
     auth: {
       user: process.env.EMAIL_USER,
@@ -47,11 +39,6 @@ const createTransporter = () => {
     socketTimeout: 15000,
   });
 };
-
-// Resolve SMTP host to IPv4 at startup (Render blocks IPv6)
-resolve4(SMTP_HOST)
-  .then(([ip]) => { smtpHostResolved = ip; console.log("📧 Resolved Gmail SMTP to:", ip); })
-  .catch((err) => console.log("📧 DNS resolve4 failed, using hostname:", err.message));
 
 const escapeHtml = (value = "") =>
   String(value)
