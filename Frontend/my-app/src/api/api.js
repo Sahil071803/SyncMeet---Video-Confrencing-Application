@@ -1,12 +1,20 @@
 import axios from "axios";
 import { logout } from "../shared/utils/auth";
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "http://localhost:5002/api";
+const getBaseUrl = () => {
+  try {
+    const envUrl = import.meta.env.VITE_API_URL;
+    if (envUrl) return envUrl;
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      return `${window.location.protocol}//${host}:5002/api`;
+    }
+  } catch {}
+  return "http://localhost:5002/api";
+};
 
 const API = axios.create({
-  baseURL: API_URL,
+  baseURL: getBaseUrl(),
   timeout: 60000,
 });
 

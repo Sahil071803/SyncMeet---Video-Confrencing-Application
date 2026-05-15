@@ -32,6 +32,21 @@ const messageSchema = new mongoose.Schema(
       default: "text",
     },
 
+    fileUrl: {
+      type: String,
+      default: "",
+    },
+
+    fileName: {
+      type: String,
+      default: "",
+    },
+
+    fileSize: {
+      type: Number,
+      default: 0,
+    },
+
     seenBy: [
       {
         type: mongoose.Schema.Types.ObjectId,

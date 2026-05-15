@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/authRoutes");
 const friendInvitationRoutes = require("./routes/friendInvitationRoutes");
 const messageRoutes = require("./routes/messageRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 
 const initSocketServer = require("./SocketServer");
 
@@ -33,19 +34,14 @@ if (process.env.FRONTEND_URL) {
 }
 
 const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.log("❌ Blocked by CORS:", origin);
-
-    return callback(
-      new Error(`CORS not allowed for origin: ${origin}`)
-    );
-  },
+  origin: process.env.NODE_ENV === "production"
+    ? (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        console.log("❌ Blocked by CORS:", origin);
+        return callback(new Error(`CORS not allowed for origin: ${origin}`));
+      }
+    : true,
 
   credentials: true,
 
@@ -86,6 +82,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/friend-invitation", friendInvitationRoutes);
 
 app.use("/api/messages", messageRoutes);
+
+app.use("/api/upload", uploadRoutes);
+
+// Serve static files from uploads directory
+app.use("/uploads", express.static("uploads"));
 
 app.use((req, res) => {
   res.status(404).json({

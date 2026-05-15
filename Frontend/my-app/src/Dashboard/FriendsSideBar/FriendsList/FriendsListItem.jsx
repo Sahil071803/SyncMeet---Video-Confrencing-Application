@@ -136,8 +136,8 @@ const Actions = styled("div")({
 });
 
 const ActionButton = styled(IconButton)(({ danger }) => ({
-  width: "36px",
-  height: "36px",
+  width: "44px",
+  height: "44px",
   color: danger ? "#FCA5A5" : "#CBD5E1",
   background: danger ? "rgba(239,68,68,0.08)" : "rgba(255,255,255,0.045)",
   border: danger

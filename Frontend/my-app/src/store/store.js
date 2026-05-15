@@ -10,6 +10,8 @@ import friendsReducer from "./reducers/friendsReducers";
 
 import chatReducer from "./chatSlice";
 
+import notificationReducer from "./notificationSlice";
+
 // ======================================
 // STORE
 // ======================================
@@ -23,6 +25,8 @@ const store = configureStore({
     friends: friendsReducer,
 
     chat: chatReducer,
+
+    notification: notificationReducer,
   },
 
   middleware: (getDefaultMiddleware) =>

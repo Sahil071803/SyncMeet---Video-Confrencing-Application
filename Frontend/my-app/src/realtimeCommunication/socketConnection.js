@@ -1,8 +1,18 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL ||
-  "http://localhost:5002";
+const getSocketUrl = () => {
+  try {
+    const envUrl = import.meta.env.VITE_SOCKET_URL;
+    if (envUrl) return envUrl;
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      return `${window.location.protocol}//${host}:5002`;
+    }
+  } catch {}
+  return "http://localhost:5002";
+};
+
+const SOCKET_URL = getSocketUrl();
 
 let socket = null;
 let isConnecting = false;
@@ -211,21 +221,38 @@ export const sendDirectMessage = (
   data
 ) => {
   if (
-    !data?.receiverId ||
-    !data?.content?.trim()
+    !data?.receiverId
   ) {
     return false;
   }
 
+  const messageData = {
+    receiverId: data.receiverId,
+  };
+
+  if (data.content?.trim()) {
+    messageData.content = data.content.trim();
+  }
+
+  if (data.messageType) {
+    messageData.messageType = data.messageType;
+  }
+
+  if (data.fileUrl) {
+    messageData.fileUrl = data.fileUrl;
+  }
+
+  if (data.fileName) {
+    messageData.fileName = data.fileName;
+  }
+
+  if (data.fileSize) {
+    messageData.fileSize = data.fileSize;
+  }
+
   return safeEmit(
     "direct-message",
-    {
-      receiverId:
-        data.receiverId,
-
-      content:
-        data.content.trim(),
-    }
+    messageData
   );
 };
 
@@ -254,6 +281,27 @@ export const sendWebRTCIceCandidate =
       data
     );
   };
+
+export const sendCallRejected = (data) => {
+  return safeEmit(
+    "call-rejected",
+    data
+  );
+};
+
+export const sendCallEnded = (data) => {
+  return safeEmit(
+    "call-ended",
+    data
+  );
+};
+
+export const sendCallReaction = (data) => {
+  return safeEmit(
+    "call-reaction",
+    data
+  );
+};
 
 export const getSocket = () =>
   socket;

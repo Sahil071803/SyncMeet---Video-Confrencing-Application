@@ -67,8 +67,8 @@ const Actions = styled("div")(({ mobile }) => ({
 }));
 
 const ActionButton = styled(IconButton)(({ mobile }) => ({
-  width: mobile ? "40px" : "44px",
-  height: mobile ? "40px" : "44px",
+  width: "44px",
+  height: "44px",
   borderRadius: mobile ? "12px" : "14px",
   color: "#fff",
   background: "rgba(255,255,255,0.04)",

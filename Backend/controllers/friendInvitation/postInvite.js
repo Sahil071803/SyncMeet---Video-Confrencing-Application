@@ -7,22 +7,13 @@ const friendsUpdate = require("../../socketHandlers/updates/friends");
 const { sendInvitationEmail } = require("../../services/emailService");
 
 const getSenderName = (senderUser, senderEmail) => {
-  return (
-    senderUser?.username ||
-    senderUser?.name ||
-    senderEmail ||
-    "Someone"
-  );
+  return senderUser?.username || senderUser?.name || senderEmail || "Someone";
 };
 
-const generateToken = () => {
-  return crypto.randomBytes(32).toString("hex");
-};
+const generateToken = () => crypto.randomBytes(32).toString("hex");
 
 const createInviteLink = (token) => {
-  const frontendUrl =
-    process.env.FRONTEND_URL || "http://localhost:5173";
-
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
   return `${frontendUrl}/invite/${token}`;
 };
 
@@ -31,21 +22,20 @@ const sendEmailInBackground = ({
   invitationLink,
   senderName,
 }) => {
-  setImmediate(async () => {
-    try {
-      console.log("📧 Background email sending to:", receiverMailAddress);
+  console.log("📧 Background email sending to:", receiverMailAddress);
+  console.log("🔗 Invitation link:", invitationLink);
 
-      const emailSent = await sendInvitationEmail({
-        receiverMailAddress,
-        invitationLink,
-        senderName,
-      });
-
+  sendInvitationEmail({
+    receiverMailAddress,
+    invitationLink,
+    senderName,
+  })
+    .then((emailSent) => {
       console.log("📧 Background email result:", emailSent);
-    } catch (error) {
+    })
+    .catch((error) => {
       console.log("❌ Background email error:", error.message);
-    }
-  });
+    });
 };
 
 const postInvite = async (req, res) => {
@@ -81,9 +71,7 @@ const postInvite = async (req, res) => {
       });
     }
 
-    const targetUser = await User.findOne({
-      email: normalizedEmail,
-    });
+    const targetUser = await User.findOne({ email: normalizedEmail });
 
     if (!targetUser) {
       return res.status(404).json({
@@ -105,12 +93,8 @@ const postInvite = async (req, res) => {
     const senderId = senderUser._id.toString();
 
     const alreadyFriend =
-      senderUser.friends?.some(
-        (id) => id.toString() === receiverId
-      ) ||
-      targetUser.friends?.some(
-        (id) => id.toString() === senderId
-      );
+      senderUser.friends?.some((id) => id.toString() === receiverId) ||
+      targetUser.friends?.some((id) => id.toString() === senderId);
 
     if (alreadyFriend) {
       return res.status(409).json({
@@ -121,12 +105,11 @@ const postInvite = async (req, res) => {
 
     const senderName = getSenderName(senderUser, senderEmail);
 
-    const invitationAlreadySent =
-      await FriendInvitation.findOne({
-        senderId,
-        receiverId,
-        status: "pending",
-      });
+    const invitationAlreadySent = await FriendInvitation.findOne({
+      senderId,
+      receiverId,
+      status: "pending",
+    });
 
     if (invitationAlreadySent) {
       console.log("⚠️ Invitation already exists, resending email...");
@@ -142,9 +125,7 @@ const postInvite = async (req, res) => {
 
       await invitationAlreadySent.save();
 
-      const invitationLink = createInviteLink(
-        invitationAlreadySent.token
-      );
+      const invitationLink = createInviteLink(invitationAlreadySent.token);
 
       sendEmailInBackground({
         receiverMailAddress: normalizedEmail,
@@ -154,18 +135,16 @@ const postInvite = async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message:
-          "Invitation already existed. Email is being sent again.",
+        message: "Invitation already existed. Email is being sent again.",
         invitation: invitationAlreadySent,
       });
     }
 
-    const invitationAlreadyReceived =
-      await FriendInvitation.findOne({
-        senderId: receiverId,
-        receiverId: senderId,
-        status: "pending",
-      });
+    const invitationAlreadyReceived = await FriendInvitation.findOne({
+      senderId: receiverId,
+      receiverId: senderId,
+      status: "pending",
+    });
 
     if (invitationAlreadyReceived) {
       return res.status(409).json({
@@ -183,9 +162,7 @@ const postInvite = async (req, res) => {
       receiverMailAddress: normalizedEmail,
       token,
       status: "pending",
-      expiresAt: new Date(
-        Date.now() + 7 * 24 * 60 * 60 * 1000
-      ),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     });
 
     await friendsUpdate.updateFriendsPendingInvitations(receiverId);

@@ -34,39 +34,12 @@ const chatSlice = createSlice({
     },
 
     // =========================
-    // UPDATE MESSAGE STATUS
-    // =========================
-    updateMessageStatus: (state, action) => {
-      const { id, status, newId } =
-        action.payload;
-
-      const msg = state.messages.find(
-        (m) => m.id === id
-      );
-
-      if (msg) {
-        msg.status = status;
-
-        if (newId) {
-          msg.id = newId;
-        }
-      }
-    },
-
-    // =========================
-    // CLEAR CHAT
-    // =========================
     clearMessages: (state) => {
       state.messages = [];
     },
   },
 });
 
-export const {
-  addMessage,
-  setMessages,
-  updateMessageStatus,
-  clearMessages,
-} = chatSlice.actions;
+export const { addMessage, setMessages, clearMessages } = chatSlice.actions;
 
 export default chatSlice.reducer;

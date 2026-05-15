@@ -1,7 +1,7 @@
 const serverStore = require("../serverStore");
 
 const getSockets = (userId) => {
-  return serverStore.getActiveConnections(userId);
+  return serverStore.getSocketIds(userId);
 };
 
 const getIO = () => {

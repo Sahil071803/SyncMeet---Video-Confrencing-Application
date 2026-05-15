@@ -64,6 +64,13 @@ const useResponsive = () => {
     );
 
   // ======================================================
+  // DERIVED VALUES
+  // ======================================================
+
+  const appBarHeight = isMobile ? 64 : 72;
+  const sidebarWidth = isMobile ? 0 : 84;
+
+  // ======================================================
   // RETURN
   // ======================================================
 
@@ -83,6 +90,10 @@ const useResponsive = () => {
     isVerySmallMobile,
 
     isTabletLandscape,
+
+    appBarHeight,
+
+    sidebarWidth,
   };
 };
 

@@ -7,13 +7,17 @@ import React, {
 import { styled } from "@mui/system";
 
 import {
+  Box,
   IconButton,
+  Typography,
   CircularProgress,
 } from "@mui/material";
 
 import {
   SendHorizonal,
   Smile,
+  Paperclip,
+  X,
 } from "lucide-react";
 
 import EmojiPicker from "emoji-picker-react";
@@ -28,6 +32,12 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import {
   sendDirectMessage,
 } from "../../realtimeCommunication/socketConnection";
+
+import axios from "axios";
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:5002/api";
 
 // ======================================================
 // STYLES
@@ -215,6 +225,37 @@ const EmojiWrapper = styled(
   zIndex: 999,
 }));
 
+const FilePreview = styled(Box)(({ mobile }) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  padding: mobile ? "8px 12px" : "10px 14px",
+  background: "rgba(139,92,246,0.1)",
+  border: "1px solid rgba(139,92,246,0.3)",
+  borderRadius: "12px",
+  marginBottom: "8px",
+}));
+
+const FilePreviewInfo = styled(Box)({
+  flex: 1,
+  minWidth: 0,
+});
+
+const FilePreviewName = styled(Typography)({
+  fontSize: "12px",
+  fontWeight: 600,
+  color: "#fff",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});
+
+const FilePreviewSize = styled(Typography)({
+  fontSize: "10px",
+  color: "#94A3B8",
+  marginTop: "2px",
+});
+
 // ======================================================
 // COMPONENT
 // ======================================================
@@ -230,6 +271,7 @@ const MessageInput = ({
     );
 
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const [message, setMessage] =
     useState("");
@@ -243,6 +285,12 @@ const MessageInput = ({
   ] = useState(false);
 
   const [sending, setSending] =
+    useState(false);
+
+  const [selectedFile, setSelectedFile] =
+    useState(null);
+
+  const [uploading, setUploading] =
     useState(false);
 
   // ======================================================
@@ -264,16 +312,101 @@ const MessageInput = ({
   };
 
   // ======================================================
+  // FILE UPLOAD
+  // ======================================================
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size must be less than 10MB");
+      return;
+    }
+
+    setSelectedFile(file);
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile) return;
+
+    try {
+      setUploading(true);
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const user = JSON.parse(localStorage.getItem("user"));
+      const token = user?.token;
+
+      const response = await axios.post(
+        `${API_URL}/upload/upload`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        const messageType = selectedFile.type.startsWith("image/")
+          ? "image"
+          : "file";
+
+        sendDirectMessage({
+          receiverId: selectedFriend._id,
+          messageType,
+          fileUrl: response.data.fileUrl,
+          fileName: response.data.fileName,
+          fileSize: response.data.fileSize,
+          content: message.trim() || "",
+        });
+
+        setMessage("");
+        setSelectedFile(null);
+        setShowEmojiPicker(false);
+
+        if (inputRef.current) {
+          inputRef.current.style.height = "auto";
+        }
+      }
+    } catch (err) {
+      console.error("❌ File upload error:", err);
+      alert("Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // ======================================================
   // SEND MESSAGE
   // ======================================================
 
   const handleSendMessage =
     async () => {
       if (
-        !message.trim() ||
-        !selectedFriend?._id ||
-        sending
+        !message.trim() &&
+        !selectedFile
       ) {
+        return;
+      }
+
+      if (!selectedFriend?._id || sending || uploading) {
+        return;
+      }
+
+      if (selectedFile) {
+        await handleFileUpload();
         return;
       }
 
@@ -426,14 +559,13 @@ const MessageInput = ({
       <SendButton
         mobile={isMobile ? 1 : 0}
         disabled={
-          !message.trim() ||
-          sending
+          (!message.trim() && !selectedFile) ||
+          sending ||
+          uploading
         }
-        onClick={
-          handleSendMessage
-        }
+        onClick={handleSendMessage}
       >
-        {sending ? (
+        {sending || uploading ? (
           <CircularProgress
             size={20}
             color="inherit"
@@ -444,10 +576,16 @@ const MessageInput = ({
           />
         )}
       </SendButton>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        style={{ display: "none" }}
+        onChange={handleFileSelect}
+        accept="image/*,.pdf,.doc,.docx,.txt,.mp4,.mp3,.zip"
+      />
     </Wrapper>
   );
 };
 
-export default memo(
-  MessageInput
-);
+export default memo(MessageInput);

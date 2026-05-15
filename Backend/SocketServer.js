@@ -87,13 +87,13 @@ const initSocketServer = (
 
   io = new Server(server, {
     cors: {
-      origin: [
-        "http://localhost:5173",
-
-        "http://localhost:3000",
-
-        "https://syncmeet-video-confrencing-applica.vercel.app",
-      ],
+      origin: process.env.NODE_ENV === "production"
+        ? [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "https://syncmeet-video-confrencing-applica.vercel.app",
+          ]
+        : true,
 
       credentials: true,
     },
@@ -267,6 +267,16 @@ const initSocketServer = (
             targetUserId
           );
 
+          // Send incoming call notification first
+          emitToUser(
+            targetUserId,
+            "incoming-call",
+            {
+              from: userId,
+            }
+          );
+
+          // Then send the WebRTC offer
           emitToUser(
             targetUserId,
             "webrtc-offer",
@@ -375,6 +385,130 @@ const initSocketServer = (
         } catch (err) {
           console.log(
             "❌ webrtc-ice-candidate error:",
+            err
+          );
+        }
+      }
+    );
+
+    // ======================================
+    // CALL REJECTION
+    // ======================================
+
+    socket.on(
+      "call-rejected",
+      ({
+        targetUserId,
+      }) => {
+        try {
+          if (
+            !userId ||
+            !targetUserId
+          ) {
+            console.log(
+              "❌ Invalid call rejection data"
+            );
+
+            return;
+          }
+
+          console.log(
+            "❌ Call rejected:",
+            userId,
+            "=>",
+            targetUserId
+          );
+
+          emitToUser(
+            targetUserId,
+            "call-rejected",
+            {
+              from: userId,
+            }
+          );
+        } catch (err) {
+          console.log(
+            "❌ call-rejected error:",
+            err
+          );
+        }
+      }
+    );
+
+    // ======================================
+    // CALL ENDED
+    // ======================================
+
+    socket.on(
+      "call-ended",
+      ({
+        targetUserId,
+      }) => {
+        try {
+          if (
+            !userId ||
+            !targetUserId
+          ) {
+            console.log(
+              "❌ Invalid call ended data"
+            );
+
+            return;
+          }
+
+          console.log(
+            "📴 Call ended:",
+            userId,
+            "=>",
+            targetUserId
+          );
+
+          emitToUser(
+            targetUserId,
+            "call-ended",
+            {
+              from: userId,
+            }
+          );
+        } catch (err) {
+          console.log(
+            "❌ call-ended error:",
+            err
+          );
+        }
+      }
+    );
+
+    // ======================================
+    // CALL REACTION (emoji relay)
+    // ======================================
+
+    socket.on(
+      "call-reaction",
+      ({
+        targetUserId,
+        emoji,
+      }) => {
+        try {
+          if (
+            !userId ||
+            !targetUserId ||
+            !emoji
+          ) {
+            return;
+          }
+
+          emitToUser(
+            targetUserId,
+            "call-reaction",
+            {
+              from: userId,
+              emoji,
+            }
+          );
+        } catch (err) {
+          console.log(
+            "❌ call-reaction error:",
             err
           );
         }

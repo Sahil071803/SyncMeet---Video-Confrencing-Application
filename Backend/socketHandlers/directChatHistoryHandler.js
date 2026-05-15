@@ -1,3 +1,6 @@
+const Message = require("../models/message");
+const Conversation = require("../models/conversation");
+
 const directChatHistoryHandler = async (socket, data) => {
   try {
     const { userId } = socket.user;
@@ -10,24 +13,26 @@ const directChatHistoryHandler = async (socket, data) => {
     });
 
     if (conversation) {
-      chatUpdates.updateChatHistory(
-        socket.io,
-        socket.id,
-        conversation._id.toString()
-      );
+      const messages = await Message.find({ conversation: conversation._id })
+        .sort({ createdAt: 1 })
+        .populate("sender", "username email avatar");
+
+      socket.emit("direct-chat-history", {
+        conversationId: conversation._id,
+        messages: messages || [],
+        participants: [userId, receiverUserId],
+      });
     } else {
-      // fallback: no conversation found
-      chatUpdates.updateChatHistory(
-        socket.io,
-        socket.id,
-        null
-      );
+      socket.emit("direct-chat-history", {
+        conversationId: null,
+        messages: [],
+        participants: [],
+      });
     }
 
   } catch (err) {
     console.log("Chat history error:", err);
 
-    // safe fallback (avoid frontend crash)
     if (socket?.io) {
       socket.io.to(socket.id).emit("direct-chat-history", {
         conversationId: null,

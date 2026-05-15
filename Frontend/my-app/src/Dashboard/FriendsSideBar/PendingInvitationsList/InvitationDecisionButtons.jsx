@@ -9,23 +9,35 @@ const InvitationDecisionButtons = ({
   rejectInvitationHandler,
 }) => {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
       <IconButton
-        size="small"
         disabled={disabled}
         onClick={acceptInvitationHandler}
-        sx={{ color: "#3ba55d" }}
+        sx={{
+          width: 44,
+          height: 44,
+          color: "#22C55E",
+          background: "rgba(34,197,94,0.1)",
+          border: "1px solid rgba(34,197,94,0.2)",
+          "&:hover": { background: "rgba(34,197,94,0.2)" },
+        }}
       >
-        <CheckIcon />
+        <CheckIcon sx={{ fontSize: 22 }} />
       </IconButton>
 
       <IconButton
-        size="small"
         disabled={disabled}
         onClick={rejectInvitationHandler}
-        sx={{ color: "#ed4245" }}
+        sx={{
+          width: 44,
+          height: 44,
+          color: "#EF4444",
+          background: "rgba(239,68,68,0.1)",
+          border: "1px solid rgba(239,68,68,0.2)",
+          "&:hover": { background: "rgba(239,68,68,0.2)" },
+        }}
       >
-        <ClearIcon />
+        <ClearIcon sx={{ fontSize: 22 }} />
       </IconButton>
     </div>
   );

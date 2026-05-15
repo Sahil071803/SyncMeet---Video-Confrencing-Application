@@ -118,6 +118,10 @@ const createPeerConnection = (targetUserId) => {
     peerConnection.onconnectionstatechange = () => {
       console.log("📡 Connection State:", peerConnection.connectionState);
 
+      if (onConnectionStateCallback) {
+        onConnectionStateCallback(peerConnection.connectionState);
+      }
+
       if (peerConnection.connectionState === "connected") {
         console.log("✅ Peers connected");
       }
@@ -229,14 +233,43 @@ export const callToOtherUser = async (userId) => {
   }
 };
 
-export const handleWebRTCOffer = async (data) => {
+export const handleWebRTCOffer = async (data, localVideoRef) => {
   try {
     console.log("📩 Offer received");
 
     connectedUserId = data.from;
 
+    // Initialize local stream if not already done
     if (!localStream) {
-      console.log("❌ Local stream missing");
+      console.log("📹 Initializing local stream for incoming call");
+      localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 24 },
+          facingMode: "user",
+        },
+      }).catch((err) => {
+        console.log("❌ Video failed, trying audio-only:", err);
+        return navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: false,
+        });
+      });
+
+      if (localVideoRef?.current) {
+        localVideoRef.current.srcObject = localStream;
+        localVideoRef.current.muted = true;
+        await localVideoRef.current.play().catch(console.log);
+      }
+    }
+
+    if (!localStream) {
+      console.log("❌ Failed to initialize local stream");
       return;
     }
 
@@ -355,6 +388,12 @@ export const toggleCamera = (enabled) => {
   } catch (err) {
     console.log("❌ Camera error:", err);
   }
+};
+
+let onConnectionStateCallback = null;
+
+export const setOnConnectionStateCallback = (cb) => {
+  onConnectionStateCallback = cb;
 };
 
 export const startScreenShare = async (localVideoRef) => {

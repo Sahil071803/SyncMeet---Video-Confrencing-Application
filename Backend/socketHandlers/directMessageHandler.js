@@ -18,14 +18,32 @@ const directMessageHandler = async (
 
     const receiverId = data?.receiverId;
     const content = data?.content?.trim();
+    const messageType = data?.messageType || "text";
+    const fileUrl = data?.fileUrl || "";
+    const fileName = data?.fileName || "";
+    const fileSize = data?.fileSize || 0;
 
     // =============================
     // VALIDATION
     // =============================
-    if (!receiverId || !content) {
+    if (!receiverId) {
       return {
         status: "error",
         message: "Invalid message data",
+      };
+    }
+
+    if (messageType === "text" && !content) {
+      return {
+        status: "error",
+        message: "Message content required",
+      };
+    }
+
+    if ((messageType === "image" || messageType === "file") && !fileUrl) {
+      return {
+        status: "error",
+        message: "File URL required",
       };
     }
 
@@ -60,8 +78,11 @@ const directMessageHandler = async (
         sender: senderId,
         receiver: receiverId,
         conversation: conversation._id,
-        content,
-        messageType: "text",
+        content: content || (messageType !== "text" ? fileName : ""),
+        messageType,
+        fileUrl,
+        fileName,
+        fileSize,
         seenBy: [senderId],
       });
 
@@ -82,7 +103,7 @@ const directMessageHandler = async (
       senderId,
       receiverId,
 
-      content,
+      content: newMessage.content,
 
       conversationId:
         conversation._id.toString(),
@@ -92,6 +113,10 @@ const directMessageHandler = async (
 
       messageType:
         newMessage.messageType,
+
+      fileUrl: newMessage.fileUrl,
+      fileName: newMessage.fileName,
+      fileSize: newMessage.fileSize,
     };
 
     // =============================

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { Typography, Box } from "@mui/material";
 
@@ -8,8 +8,13 @@ import FriendsSideBar from "./FriendsSideBar/FriendsSideBar";
 import Messenger from "./Messenger/Messenger";
 import MeetingPanel from "./MeetingPanel/MeetingPanel";
 import MobileBottomNavigation from "./MobileBottomNavigation";
+import IncomingCallDialog from "../shared/components/IncomingCallDialog";
+import AlertsPage from "./AlertsPage";
+import SettingsPage from "./SettingsPage";
 
 import useResponsive from "../hooks/useResponsive";
+import useNotificationSounds from "../hooks/useNotificationSounds";
+import useBrowserNotifications from "../hooks/useBrowserNotifications";
 
 import {
   DashboardWrapper,
@@ -21,52 +26,74 @@ import {
 import {
   connectWithSocketServer,
   disconnectSocket,
+  sendCallRejected,
 } from "../realtimeCommunication/socketConnection";
 
-import { registerSocketEvents } from "../realtimeCommunication/socketEvents";
+import {
+  registerSocketEvents,
+  setIncomingCallCallback,
+  setCallRejectedCallback,
+  setCallEndedCallback,
+  setOnMessageCallback,
+  setOnFriendRequestCallback,
+} from "../realtimeCommunication/socketEvents";
 
-const PlaceholderPanel = ({ title, subtitle }) => {
-  return (
-    <Box
-      sx={{
-        width: "100%",
-        height: "100%",
-        minHeight: 260,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        textAlign: "center",
-        p: 3,
-        background: "linear-gradient(180deg,#071028 0%,#0B1120 100%)",
-      }}
-    >
-      <Typography sx={{ color: "#fff", fontSize: 26, fontWeight: 800 }}>
-        {title}
-      </Typography>
+const DEFAULT_SETTINGS = {
+  soundEnabled: true,
+  browserNotifEnabled: true,
+  autoJoinAudio: true,
+  autoEnableVideo: true,
+};
 
-      <Typography
-        sx={{
-          color: "#94A3B8",
-          fontSize: 14,
-          mt: 1,
-          maxWidth: 340,
-          lineHeight: 1.7,
-        }}
-      >
-        {subtitle}
-      </Typography>
-    </Box>
-  );
+const loadSettings = () => {
+  try {
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem("syncmeet_prefs") || "{}") };
+  } catch {
+    return { ...DEFAULT_SETTINGS };
+  }
 };
 
 const Dashboard = () => {
   const { isMobile } = useResponsive();
+  const sounds = useNotificationSounds();
+  const browserNotif = useBrowserNotifications();
+  const callSoundCleanupRef = useRef(null);
 
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [activeSection, setActiveSection] = useState("meeting");
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [callRejected, setCallRejected] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const [settings, setSettings] = useState(loadSettings);
 
   const friends = useSelector((state) => state.friends?.friends || []);
+  const unreadCount = useSelector((state) => state.notification?.unreadCount || 0);
+
+  const updateSetting = useCallback((key, value) => {
+    setSettings((prev) => {
+      const next = { ...prev, [key]: value };
+      try {
+        localStorage.setItem("syncmeet_prefs", JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  }, []);
+
+  // Sync settings to hooks
+  useEffect(() => { sounds.setSoundEnabled(settings.soundEnabled); }, [settings.soundEnabled]);
+  useEffect(() => { browserNotif.setBrowserNotifEnabled(settings.browserNotifEnabled); }, [settings.browserNotifEnabled]);
+
+  // Update page title with unread count
+  useEffect(() => {
+    document.title = unreadCount > 0
+      ? `(${unreadCount}) SyncMeet`
+      : "SyncMeet • Video Conferencing";
+  }, [unreadCount]);
+
+  // Request browser notification permission on mount
+  useEffect(() => {
+    browserNotif.requestPermission();
+  }, []);
 
   useEffect(() => {
     if (friends?.length > 0 && !selectedFriend) {
@@ -93,6 +120,70 @@ const Dashboard = () => {
 
     if (socket) {
       registerSocketEvents(socket);
+
+      setIncomingCallCallback((data) => {
+        console.log("📞 Incoming call received:", data);
+        setIncomingCall(data);
+        setCallRejected(false);
+        setCallEnded(false);
+
+        const cleanup = sounds.playCallSound();
+        callSoundCleanupRef.current = cleanup;
+
+        const caller = friends.find(
+          (f) => f._id === data.from || f.id === data.from || f.userId === data.from
+        );
+
+        if (caller) {
+          setSelectedFriend(caller);
+          setActiveSection("meeting");
+        }
+
+        const callerName = caller?.username || "Someone";
+        browserNotif.notifyCall(callerName, () => {
+          setActiveSection("meeting");
+        });
+      });
+
+      setCallRejectedCallback((data) => {
+        console.log("❌ Call rejected:", data);
+        setCallRejected(true);
+        setIncomingCall(null);
+        sounds.playCallEndedSound();
+        if (callSoundCleanupRef.current) {
+          callSoundCleanupRef.current();
+          callSoundCleanupRef.current = null;
+        }
+      });
+
+      setCallEndedCallback((data) => {
+        console.log("📴 Call ended:", data);
+        setCallEnded(true);
+        setIncomingCall(null);
+        sounds.playCallEndedSound();
+        if (callSoundCleanupRef.current) {
+          callSoundCleanupRef.current();
+          callSoundCleanupRef.current = null;
+        }
+      });
+
+      setOnMessageCallback(({ senderName, preview, senderId }) => {
+        sounds.playMessageSound();
+        const caller = friends.find(
+          (f) => f._id === senderId || f.id === senderId || f.userId === senderId
+        );
+        browserNotif.notifyMessage(senderName, preview, () => {
+          if (caller) {
+            setSelectedFriend(caller);
+            setActiveSection("messages");
+          }
+        });
+      });
+
+      setOnFriendRequestCallback(({ senderName }) => {
+        sounds.playInviteSound();
+        browserNotif.notifyFriendRequest(senderName);
+      });
     }
 
     return () => {
@@ -100,11 +191,32 @@ const Dashboard = () => {
         disconnectSocket();
       }
     };
-  }, []);
+  }, [friends]);
 
   const handleSelectFriend = (friend) => {
     setSelectedFriend(friend);
     setActiveSection("messages");
+  };
+
+  const handleAcceptCall = () => {
+    console.log("✅ Call accepted");
+    if (callSoundCleanupRef.current) {
+      callSoundCleanupRef.current();
+      callSoundCleanupRef.current = null;
+    }
+    setIncomingCall(null);
+  };
+
+  const handleRejectCall = () => {
+    console.log("❌ Call rejected");
+    if (callSoundCleanupRef.current) {
+      callSoundCleanupRef.current();
+      callSoundCleanupRef.current = null;
+    }
+    if (incomingCall?.from) {
+      sendCallRejected({ targetUserId: incomingCall.from });
+    }
+    setIncomingCall(null);
   };
 
   const renderActiveScreen = () => {
@@ -121,19 +233,14 @@ const Dashboard = () => {
     }
 
     if (activeSection === "alerts") {
-      return (
-        <PlaceholderPanel
-          title="Alerts"
-          subtitle="Notifications and recent activity will appear here."
-        />
-      );
+      return <AlertsPage />;
     }
 
     if (activeSection === "settings") {
       return (
-        <PlaceholderPanel
-          title="Settings"
-          subtitle="Profile, notifications and app preferences will appear here."
+        <SettingsPage
+          settings={settings}
+          onUpdateSetting={updateSetting}
         />
       );
     }
@@ -143,7 +250,9 @@ const Dashboard = () => {
 
   return (
     <DashboardWrapper mobile={isMobile ? 1 : 0}>
-      <DashboardAppBar />
+      <DashboardAppBar
+        setActiveSection={setActiveSection}
+      />
 
       <ContentWrapper mobile={isMobile ? 1 : 0}>
         {!isMobile && (
@@ -166,6 +275,13 @@ const Dashboard = () => {
           setActiveSection={setActiveSection}
         />
       )}
+
+      <IncomingCallDialog
+        open={!!incomingCall}
+        callerId={incomingCall?.from}
+        onAccept={handleAcceptCall}
+        onReject={handleRejectCall}
+      />
     </DashboardWrapper>
   );
 };

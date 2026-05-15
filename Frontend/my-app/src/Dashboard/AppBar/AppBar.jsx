@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 
 import {
   Avatar,
@@ -13,14 +13,17 @@ import { styled } from "@mui/system";
 import {
   Bell,
   LogOut,
-  Search,
   Settings,
   Video,
 } from "lucide-react";
 
+import { useSelector } from "react-redux";
+
 import useResponsive from "../../hooks/useResponsive";
 
 import { disconnectSocket } from "../../realtimeCommunication/socketConnection";
+
+import NotificationMenu from "./NotificationMenu";
 
 const MainContainer = styled("div")(({ mobile, height }) => ({
   width: "100%",
@@ -30,13 +33,12 @@ const MainContainer = styled("div")(({ mobile, height }) => ({
   alignItems: "center",
   justifyContent: "space-between",
   padding: mobile ? "0 14px" : "0 24px",
-  position: "sticky",
-  top: 0,
+  position: "relative",
   zIndex: 1200,
   background: "rgba(2,6,23,0.78)",
   backdropFilter: "blur(18px)",
   borderBottom: "1px solid rgba(255,255,255,0.06)",
-  overflow: "hidden",
+  overflow: "visible",
 }));
 
 const LeftSection = styled("div")({
@@ -85,7 +87,6 @@ const ActionButton = styled(IconButton)(({ mobile }) => ({
   position: "relative",
   zIndex: 10,
   pointerEvents: "auto",
-
   "&:hover": {
     background: "rgba(255,255,255,0.08)",
     transform: "translateY(-2px)",
@@ -101,8 +102,17 @@ const ProfileWrapper = styled("div")(({ mobile }) => ({
   borderLeft: "1px solid rgba(255,255,255,0.06)",
 }));
 
-const AppBar = () => {
+const NotifWrapper = styled("div")({
+  position: "relative",
+  display: "inline-flex",
+});
+
+const AppBar = ({ setActiveSection }) => {
   const { isMobile, appBarHeight } = useResponsive();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef(null);
+
+  const unreadCount = useSelector((state) => state.notification?.unreadCount || 0);
 
   const user = useMemo(() => {
     try {
@@ -114,15 +124,22 @@ const AppBar = () => {
 
   const username = user?.username || user?.email?.split("@")[0] || "User";
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleLogout = () => {
     try {
       disconnectSocket();
-
       localStorage.removeItem("user");
       localStorage.removeItem("token");
-
       sessionStorage.clear();
-
       window.location.replace("/login");
     } catch (err) {
       console.log("Logout Error:", err);
@@ -162,30 +179,51 @@ const AppBar = () => {
 
       <RightSection mobile={isMobile ? 1 : 0}>
         <Tooltip title="Meetings">
-          <ActionButton mobile={isMobile ? 1 : 0}>
+          <ActionButton
+            mobile={isMobile ? 1 : 0}
+            onClick={() => setActiveSection?.("meeting")}
+          >
             <Video size={18} />
           </ActionButton>
         </Tooltip>
 
-        <Tooltip title="Notifications">
-          <Badge overlap="circular" color="error" variant="dot">
-            <ActionButton mobile={isMobile ? 1 : 0}>
-              <Bell size={18} />
-            </ActionButton>
-          </Badge>
-        </Tooltip>
-
-        {!isMobile && (
-          <Tooltip title="Search">
-            <ActionButton mobile={isMobile ? 1 : 0}>
-              <Search size={18} />
-            </ActionButton>
+        <NotifWrapper ref={notifRef}>
+          <Tooltip title="Notifications">
+            <Badge
+              overlap="circular"
+              color="error"
+              badgeContent={unreadCount}
+              max={99}
+              invisible={unreadCount === 0}
+              sx={{
+                "& .MuiBadge-badge": {
+                  background: "linear-gradient(135deg,#8B5CF6,#6D28D9)",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  minWidth: "18px",
+                  height: "18px",
+                  borderRadius: "10px",
+                },
+              }}
+            >
+              <ActionButton
+                mobile={isMobile ? 1 : 0}
+                onClick={() => setNotifOpen((prev) => !prev)}
+              >
+                <Bell size={18} />
+              </ActionButton>
+            </Badge>
           </Tooltip>
-        )}
+
+          {notifOpen && <NotificationMenu onClose={() => setNotifOpen(false)} />}
+        </NotifWrapper>
 
         {!isMobile && (
           <Tooltip title="Settings">
-            <ActionButton mobile={isMobile ? 1 : 0}>
+            <ActionButton
+              mobile={isMobile ? 1 : 0}
+              onClick={() => setActiveSection?.("settings")}
+            >
               <Settings size={18} />
             </ActionButton>
           </Tooltip>

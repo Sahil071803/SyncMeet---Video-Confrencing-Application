@@ -1,19 +1,16 @@
 const Conversation = require("../../models/conversation");
+const Message = require("../../models/message");
 
-/**
- * Emit updated chat history to client
- * Optimized for real-time chat apps
- */
 const updateChatHistory = async (io, socketId, conversationId) => {
   try {
     if (!conversationId || !socketId) return;
 
+    const messages = await Message.find({ conversation: conversationId })
+      .sort({ createdAt: 1 })
+      .populate("sender", "username email avatar");
+
     const conversation = await Conversation.findById(conversationId)
-      .populate("participants", "firstName lastName email")
-      .populate({
-        path: "messages",
-        options: { sort: { createdAt: 1 } }, // ensure correct order
-      });
+      .populate("participants", "username email");
 
     if (!conversation) {
       io.to(socketId).emit("direct-chat-history", {
@@ -26,14 +23,13 @@ const updateChatHistory = async (io, socketId, conversationId) => {
 
     io.to(socketId).emit("direct-chat-history", {
       conversationId: conversation._id,
-      messages: conversation.messages || [],
+      messages: messages || [],
       participants: conversation.participants || [],
     });
 
   } catch (err) {
     console.log("updateChatHistory error:", err);
 
-    // fallback safe response (avoid frontend crash)
     io.to(socketId).emit("direct-chat-history", {
       conversationId,
       messages: [],
