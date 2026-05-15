@@ -72,24 +72,29 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    emailProvider: process.env.BREVO_API_KEY ? "brevo-api" : (process.env.SMTP_HOST ? "smtp" : "none"),
+    emailProvider: process.env.RESEND_API_KEY ? "resend" : "none",
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
 });
 
-// Debug: test Brevo API email delivery
+// Debug: test email delivery via Resend
 app.get("/api/test-email", async (req, res) => {
-  const { sendInvitationEmail } = require("./services/emailService");
+  const { Resend } = require("resend");
+  const key = (process.env.RESEND_API_KEY || "").trim();
+  if (!key) return res.json({ status: "Set RESEND_API_KEY in Render Dashboard → Environment" });
   try {
-    const result = await sendInvitationEmail({
-      receiverMailAddress: "sahilatram1226@gmail.com",
-      invitationLink: "https://sync-meet-video-confrencing-applica.vercel.app/invite/test",
-      senderName: "SyncMeet Test",
+    const resend = new Resend(key);
+    const { data, error } = await resend.emails.send({
+      from: "SyncMeet <onboarding@resend.dev>",
+      to: "sahilatram1226@gmail.com",
+      subject: "SyncMeet Test",
+      html: "<p>Resend works from Render!</p>",
     });
-    res.json({ sent: result, apiKeySet: !!process.env.BREVO_API_KEY });
+    if (error) throw new Error(error.message);
+    res.json({ sent: true, id: data?.id });
   } catch (e) {
-    res.json({ sent: false, error: e.message, apiKeySet: !!process.env.BREVO_API_KEY });
+    res.json({ sent: false, error: e.message });
   }
 });
 
@@ -136,9 +141,9 @@ const startServer = async () => {
     console.log("✅ MongoDB Connected Successfully");
 
     // Warn about missing email config
-    if (!process.env.BREVO_API_KEY) {
-      console.log("⚠️  BREVO_API_KEY not set — invitation emails will fail");
-      console.log("   ➜ Add BREVO_API_KEY in Render Dashboard → Environment Variables");
+    if (!process.env.RESEND_API_KEY) {
+      console.log("⚠️  RESEND_API_KEY not set — invitation emails will fail");
+      console.log("   ➜ Add RESEND_API_KEY in Render Dashboard → Environment Variables");
     }
 
     if (!process.env.FRONTEND_URL) {

@@ -1,4 +1,4 @@
-const https = require("https");
+const { Resend } = require("resend");
 
 const escapeHtml = (value = "") =>
   String(value)
@@ -8,41 +8,17 @@ const escapeHtml = (value = "") =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 
-const sendViaBrevoApi = async ({ receiverMailAddress, htmlContent, subject }) => {
-  const apiKey = (process.env.BREVO_API_KEY || "").trim();
-  if (!apiKey) throw new Error("BREVO_API_KEY not set in Render env vars");
-
-  const data = JSON.stringify({
-    sender: { name: "SyncMeet", email: "sahilatram1226@gmail.com" },
-    to: [{ email: receiverMailAddress }],
+const sendViaResend = async ({ to, subject, html }) => {
+  const apiKey = (process.env.RESEND_API_KEY || "").trim();
+  if (!apiKey) throw new Error("Set RESEND_API_KEY in Render Dashboard → Environment");
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: "SyncMeet <onboarding@resend.dev>",
+    to,
     subject,
-    htmlContent,
+    html,
   });
-
-  await new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: "api.brevo.com",
-      path: "/v3/smtp/email",
-      method: "POST",
-      headers: {
-        "api-key": apiKey,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(data),
-      },
-      timeout: 15000,
-    }, (res) => {
-      let body = "";
-      res.on("data", (c) => body += c);
-      res.on("end", () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve();
-        else reject(new Error(`Brevo API ${res.statusCode}: ${body.slice(0, 200)}`));
-      });
-    });
-    req.on("error", reject);
-    req.on("timeout", () => { req.destroy(); reject(new Error("Brevo API timeout")); });
-    req.write(data);
-    req.end();
-  });
+  if (error) throw new Error(error.message);
 };
 
 const escapeHtml = (value = "") =>
@@ -108,10 +84,10 @@ const sendInvitationEmail = async ({
     const safeSenderName = escapeHtml(senderName);
     const safeInvitationLink = escapeHtml(invitationLink);
 
-    await sendViaBrevoApi({
-      receiverMailAddress,
+    await sendViaResend({
+      to: receiverMailAddress,
       subject: "You're Invited To Join SyncMeet 🚀",
-      htmlContent: buildHtml(safeSenderName, safeInvitationLink),
+      html: buildHtml(safeSenderName, safeInvitationLink),
     });
 
     console.log("✅ Invitation email sent successfully");
