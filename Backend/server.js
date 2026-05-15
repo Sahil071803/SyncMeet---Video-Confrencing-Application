@@ -78,18 +78,31 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Debug: test email sending on Render
+// Debug: test email sending on Render (direct nodemailer for error visibility)
 app.get("/api/test-email", async (req, res) => {
   try {
-    const { sendInvitationEmail } = require("./services/emailService");
-    const result = await sendInvitationEmail({
-      receiverMailAddress: "onlycoding66@gmail.com",
-      invitationLink: "https://sync-meet-video-confrencing-applica.vercel.app/invite/test",
-      senderName: "SyncMeet Debug",
+    const nodemailer = require("nodemailer");
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
-    res.json({ success: true, emailSent: result });
+    console.log("📧 test-email: verifying transporter...");
+    const info = await transporter.sendMail({
+      from: `"SyncMeet Debug" <${process.env.EMAIL_USER}>`,
+      to: "onlycoding66@gmail.com",
+      subject: "SyncMeet Debug Email",
+      text: "If you see this, email works from Render",
+    });
+    console.log("✅ test-email sent:", info.messageId);
+    res.json({ success: true, messageId: info.messageId });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    console.log("❌ test-email error:", err);
+    res.status(500).json({ success: false, error: err.message, code: err.code, command: err.command });
   }
 });
 
