@@ -72,60 +72,25 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    emailProvider: process.env.SMTP_HOST ? process.env.SMTP_HOST.trim() : (process.env.SENDGRID_API_KEY ? "sendgrid" : "none"),
+    emailProvider: process.env.BREVO_API_KEY ? "brevo-api" : (process.env.SMTP_HOST ? "smtp" : "none"),
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
 });
 
-// Debug: test Brevo email delivery on multiple ports
-const net = require("net");
-const nodemailer = require("nodemailer");
+// Debug: test Brevo API email delivery
 app.get("/api/test-email", async (req, res) => {
-  const host = (process.env.SMTP_HOST || "").trim();
-  const user = (process.env.SMTP_USER || "").trim();
-  const pass = (process.env.SMTP_PASS || "").trim();
-  const ports = [587, 2525, 465];
-
-  // Test TCP connectivity to each port
-  const tcpResults = await Promise.all(ports.map(async (port) => {
-    try {
-      await new Promise((resolve, reject) => {
-        const s = net.createConnection(port, host, () => { s.end(); resolve(); });
-        s.on("error", reject);
-        s.setTimeout(5000, () => { s.destroy(); reject(new Error("timeout")); });
-      });
-      return { port, reachable: true };
-    } catch (e) {
-      return { port, reachable: false, error: e.message };
-    }
-  }));
-
-  // Try sending via first reachable port
-  let sendResult = null;
-  for (const p of ports) {
-    if (!tcpResults.find(r => r.port === p)?.reachable) continue;
-    try {
-      const transporter = nodemailer.createTransport({
-        host, port: p, secure: false, requireTLS: true,
-        auth: { user, pass },
-        tls: { rejectUnauthorized: false },
-        connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
-      });
-      const info = await transporter.sendMail({
-        from: '"SyncMeet" <sahilatram1226@gmail.com>',
-        to: "sahilatram1226@gmail.com",
-        subject: "SyncMeet Test",
-        text: "Email works from Render!",
-      });
-      sendResult = { sent: true, port: p, messageId: info.messageId };
-      break;
-    } catch (e) {
-      sendResult = { sent: false, port: p, error: e.message, code: e.code };
-    }
+  const { sendInvitationEmail } = require("./services/emailService");
+  try {
+    const result = await sendInvitationEmail({
+      receiverMailAddress: "sahilatram1226@gmail.com",
+      invitationLink: "https://sync-meet-video-confrencing-applica.vercel.app/invite/test",
+      senderName: "SyncMeet Test",
+    });
+    res.json({ sent: result, apiKeySet: !!process.env.BREVO_API_KEY });
+  } catch (e) {
+    res.json({ sent: false, error: e.message, apiKeySet: !!process.env.BREVO_API_KEY });
   }
-
-  res.json({ host, user: user, tcp: tcpResults, send: sendResult });
 });
 
 app.use("/api/auth", authRoutes);
@@ -171,10 +136,9 @@ const startServer = async () => {
     console.log("✅ MongoDB Connected Successfully");
 
     // Warn about missing email config
-    if (!process.env.SMTP_HOST) {
-      console.log("⚠️  No email provider configured — invitation emails will fail");
-      console.log("   ➜ Add SMTP_HOST + SMTP_USER + SMTP_PASS in Render Dashboard");
-      console.log("   ➜ Free options: Brevo (300/day), Mailgun (100/day), SendGrid (100/day)");
+    if (!process.env.BREVO_API_KEY) {
+      console.log("⚠️  BREVO_API_KEY not set — invitation emails will fail");
+      console.log("   ➜ Add BREVO_API_KEY in Render Dashboard → Environment Variables");
     }
 
     if (!process.env.FRONTEND_URL) {
