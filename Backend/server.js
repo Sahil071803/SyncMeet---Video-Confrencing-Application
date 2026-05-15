@@ -81,25 +81,29 @@ app.get("/api/health", (req, res) => {
 // Debug: test SMTP connectivity from Render
 const net = require("net");
 app.get("/api/test-email", async (req, res) => {
-  const results = [];
   const hosts = [
+    { name: "smtp.gmail.com:465", host: "smtp.gmail.com", port: 465 },
     { name: "smtp.gmail.com:587", host: "smtp.gmail.com", port: 587 },
     { name: "smtp.sendgrid.net:587", host: "smtp.sendgrid.net", port: 587 },
+    { name: "smtp.sendgrid.net:2525", host: "smtp.sendgrid.net", port: 2525 },
     { name: "smtp.mailgun.org:587", host: "smtp.mailgun.org", port: 587 },
+    { name: "smtp.mailgun.org:2525", host: "smtp.mailgun.org", port: 2525 },
+    { name: "email-smtp.us-east-1.amazonaws.com:587", host: "email-smtp.us-east-1.amazonaws.com", port: 587 },
+    { name: "email-smtp.us-east-1.amazonaws.com:2587", host: "email-smtp.us-east-1.amazonaws.com", port: 2587 },
   ];
-  for (const h of hosts) {
+  const results = await Promise.all(hosts.map(async (h) => {
     try {
       await new Promise((resolve, reject) => {
         const s = net.createConnection(h.port, h.host, () => { s.end(); resolve(); });
         s.on("error", reject);
-        s.setTimeout(5000, () => { s.destroy(); reject(new Error("timeout")); });
+        s.setTimeout(8000, () => { s.destroy(); reject(new Error("timeout")); });
       });
-      results.push({ host: h.name, reachable: true });
+      return { host: h.name, reachable: true };
     } catch (e) {
-      results.push({ host: h.name, reachable: false, error: e.message });
+      return { host: h.name, reachable: false, error: e.message };
     }
-  }
-  res.json({ results, emailProvider: process.env.SENDGRID_API_KEY ? "sendgrid" : (process.env.EMAIL_USER ? "gmail" : "none") });
+  }));
+  res.json({ results });
 });
 
 app.use("/api/auth", authRoutes);
