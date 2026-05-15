@@ -16,8 +16,10 @@ const getBaseUrl = () => {
   return PROD_API;
 };
 
+const API_URL = getBaseUrl();
+
 const API = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL: API_URL,
   timeout: 60000,
 });
 
