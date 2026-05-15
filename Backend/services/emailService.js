@@ -4,10 +4,12 @@ const createTransporter = () => {
   // Custom SMTP (use with any provider: Brevo, Mailgun, SendGrid, etc.)
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     const host = process.env.SMTP_HOST.trim();
-    console.log(`📧 Using SMTP: ${host}:${process.env.SMTP_PORT || 587}`);
+    // Port 2525 works from Render (587/465 are often blocked)
+    const port = 2525;
+    console.log(`📧 Using SMTP: ${host}:${port}`);
     return nodemailer.createTransport({
       host,
-      port: parseInt(process.env.SMTP_PORT) || 587,
+      port,
       secure: process.env.SMTP_SECURE === "true",
       auth: {
         user: process.env.SMTP_USER.trim(),
