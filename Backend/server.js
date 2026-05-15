@@ -72,7 +72,7 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    emailProvider: process.env.SMTP_HOST || (process.env.SENDGRID_API_KEY ? "sendgrid" : "none"),
+    emailProvider: process.env.SMTP_HOST ? process.env.SMTP_HOST.trim() : (process.env.SENDGRID_API_KEY ? "sendgrid" : "none"),
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
@@ -83,7 +83,7 @@ app.get("/api/test-email", async (req, res) => {
   try {
     const nodemailer = require("nodemailer");
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host: process.env.SMTP_HOST.trim(),
       port: parseInt(process.env.SMTP_PORT) || 587,
       secure: false,
       auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },

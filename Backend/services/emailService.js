@@ -3,14 +3,15 @@ const nodemailer = require("nodemailer");
 const createTransporter = () => {
   // Custom SMTP (use with any provider: Brevo, Mailgun, SendGrid, etc.)
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    console.log(`📧 Using SMTP: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT || 587}`);
+    const host = process.env.SMTP_HOST.trim();
+    console.log(`📧 Using SMTP: ${host}:${process.env.SMTP_PORT || 587}`);
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host,
       port: parseInt(process.env.SMTP_PORT) || 587,
       secure: process.env.SMTP_SECURE === "true",
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: process.env.SMTP_USER.trim(),
+        pass: process.env.SMTP_PASS.trim(),
       },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
