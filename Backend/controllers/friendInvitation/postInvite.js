@@ -13,8 +13,12 @@ const getSenderName = (senderUser, senderEmail) => {
 const generateToken = () => crypto.randomBytes(32).toString("hex");
 
 const createInviteLink = (token) => {
-  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-  return `${frontendUrl}/invite/${token}`;
+  const frontendUrl = process.env.FRONTEND_URL;
+  if (frontendUrl) return `${frontendUrl}/invite/${token}`;
+  if (process.env.NODE_ENV === "production") {
+    return `https://sync-meet-video-confrencing-applica.vercel.app/invite/${token}`;
+  }
+  return `http://localhost:5173/invite/${token}`;
 };
 
 const sendEmailInBackground = ({

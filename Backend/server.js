@@ -117,6 +117,17 @@ const startServer = async () => {
 
     console.log("✅ MongoDB Connected Successfully");
 
+    // Warn about missing email config
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.log("⚠️  EMAIL_USER / EMAIL_PASS not set — invitation emails will fail");
+      console.log("   ➜ Add them in Render Dashboard → Environment Variables");
+    }
+
+    if (!process.env.FRONTEND_URL) {
+      console.log("⚠️  FRONTEND_URL not set — invite links may point to localhost");
+      console.log("   ➜ Add FRONTEND_URL in Render Dashboard → Environment Variables");
+    }
+
     server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
