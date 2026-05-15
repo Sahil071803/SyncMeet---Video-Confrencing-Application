@@ -78,27 +78,53 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Debug: test email delivery
+// Debug: test Brevo email delivery on multiple ports
+const net = require("net");
+const nodemailer = require("nodemailer");
 app.get("/api/test-email", async (req, res) => {
-  try {
-    const nodemailer = require("nodemailer");
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST.trim(),
-      port: parseInt(process.env.SMTP_PORT) || 587,
-      secure: false,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
-    });
-    const info = await transporter.sendMail({
-      from: '"SyncMeet" <sahilatram1226@gmail.com>',
-      to: "sahilatram1226@gmail.com",
-      subject: "SyncMeet Test",
-      text: "Brevo email works from Render!",
-    });
-    res.json({ sent: true, messageId: info.messageId });
-  } catch (e) {
-    res.json({ sent: false, error: e.message, code: e.code, host: process.env.SMTP_HOST });
+  const host = (process.env.SMTP_HOST || "").trim();
+  const user = (process.env.SMTP_USER || "").trim();
+  const pass = (process.env.SMTP_PASS || "").trim();
+  const ports = [587, 2525, 465];
+
+  // Test TCP connectivity to each port
+  const tcpResults = await Promise.all(ports.map(async (port) => {
+    try {
+      await new Promise((resolve, reject) => {
+        const s = net.createConnection(port, host, () => { s.end(); resolve(); });
+        s.on("error", reject);
+        s.setTimeout(5000, () => { s.destroy(); reject(new Error("timeout")); });
+      });
+      return { port, reachable: true };
+    } catch (e) {
+      return { port, reachable: false, error: e.message };
+    }
+  }));
+
+  // Try sending via first reachable port
+  let sendResult = null;
+  for (const p of ports) {
+    if (!tcpResults.find(r => r.port === p)?.reachable) continue;
+    try {
+      const transporter = nodemailer.createTransport({
+        host, port: p, secure: p === 465,
+        auth: { user, pass },
+        connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
+      });
+      const info = await transporter.sendMail({
+        from: '"SyncMeet" <sahilatram1226@gmail.com>',
+        to: "sahilatram1226@gmail.com",
+        subject: "SyncMeet Test",
+        text: "Email works from Render!",
+      });
+      sendResult = { sent: true, port: p, messageId: info.messageId };
+      break;
+    } catch (e) {
+      sendResult = { sent: false, port: p, error: e.message, code: e.code };
+    }
   }
+
+  res.json({ host, tcp: tcpResults, send: sendResult });
 });
 
 app.use("/api/auth", authRoutes);
