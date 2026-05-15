@@ -1,16 +1,19 @@
 import axios from "axios";
 import { logout } from "../shared/utils/auth";
 
+const PROD_API = "https://syncmeet-video-confrencing-application.onrender.com/api";
+
 const getBaseUrl = () => {
   try {
     const envUrl = import.meta.env.VITE_API_URL;
     if (envUrl) return envUrl;
     if (typeof window !== "undefined") {
       const host = window.location.hostname;
+      if (host.includes("vercel.app")) return PROD_API;
       return `${window.location.protocol}//${host}:5002/api`;
     }
   } catch {}
-  return "http://localhost:5002/api";
+  return PROD_API;
 };
 
 const API = axios.create({

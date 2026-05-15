@@ -1,15 +1,18 @@
 import { io } from "socket.io-client";
 
+const PROD_SOCKET = "https://syncmeet-video-confrencing-application.onrender.com";
+
 const getSocketUrl = () => {
   try {
     const envUrl = import.meta.env.VITE_SOCKET_URL;
     if (envUrl) return envUrl;
     if (typeof window !== "undefined") {
       const host = window.location.hostname;
+      if (host.includes("vercel.app")) return PROD_SOCKET;
       return `${window.location.protocol}//${host}:5002`;
     }
   } catch {}
-  return "http://localhost:5002";
+  return PROD_SOCKET;
 };
 
 const SOCKET_URL = getSocketUrl();
