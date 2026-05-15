@@ -78,21 +78,23 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Debug: test email sending on Render (direct nodemailer for error visibility)
+// Debug: test email sending on Render
 app.get("/api/test-email", async (req, res) => {
   try {
     const nodemailer = require("nodemailer");
+    const dns = require("dns");
+    const { promisify } = require("util");
+    const [ip] = await promisify(dns.resolve4)("smtp.gmail.com");
+    console.log("📧 test-email: resolved Gmail SMTP to", ip);
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
+      host: ip,
       port: 587,
       secure: false,
-      family: 4,
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
     });
-    console.log("📧 test-email: verifying transporter...");
     const info = await transporter.sendMail({
       from: `"SyncMeet Debug" <${process.env.EMAIL_USER}>`,
       to: "onlycoding66@gmail.com",
@@ -100,7 +102,7 @@ app.get("/api/test-email", async (req, res) => {
       text: "If you see this, email works from Render",
     });
     console.log("✅ test-email sent:", info.messageId);
-    res.json({ success: true, messageId: info.messageId });
+    res.json({ success: true, messageId: info.messageId, resolvedIp: ip });
   } catch (err) {
     console.log("❌ test-email error:", err);
     res.status(500).json({ success: false, error: err.message, code: err.code, command: err.command });
