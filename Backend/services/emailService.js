@@ -6,6 +6,7 @@ const sendViaResend = async ({ to, subject, html }) => {
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from: "SyncMeet <onboarding@resend.dev>",
+    replyTo: "sahilatram303@gmail.com",
     to,
     subject,
     html,

@@ -87,7 +87,7 @@ app.get("/api/test-email", async (req, res) => {
     const resend = new Resend(key);
     const { data, error } = await resend.emails.send({
       from: "SyncMeet <onboarding@resend.dev>",
-      to: "sahilatram1226@gmail.com",
+      to: "sahilatram303@gmail.com",
       subject: "SyncMeet Test",
       html: "<p>Resend works from Render!</p>",
     });
