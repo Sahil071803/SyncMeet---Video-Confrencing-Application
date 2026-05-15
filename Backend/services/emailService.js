@@ -1,16 +1,16 @@
 const nodemailer = require("nodemailer");
 
 const createTransporter = () => {
-  // SendGrid (recommended - works from cloud providers like Render)
-  if (process.env.SENDGRID_API_KEY) {
-    console.log("📧 Using SendGrid SMTP on port 2525");
+  // Custom SMTP (use with any provider: Brevo, Mailgun, SendGrid, etc.)
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    console.log(`📧 Using SMTP: ${process.env.SMTP_HOST}:${process.env.SMTP_PORT || 587}`);
     return nodemailer.createTransport({
-      host: "smtp.sendgrid.net",
-      port: 2525,
-      secure: false,
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === "true",
       auth: {
-        user: "apikey",
-        pass: process.env.SENDGRID_API_KEY,
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
@@ -18,26 +18,21 @@ const createTransporter = () => {
     });
   }
 
-  // Gmail SMTP (works locally, blocked from some cloud providers)
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    throw new Error(
-      "Set SENDGRID_API_KEY (recommended) or EMAIL_USER + EMAIL_PASS in Render env vars"
-    );
+  // SendGrid (legacy)
+  if (process.env.SENDGRID_API_KEY) {
+    console.log("📧 Using SendGrid SMTP on port 2525");
+    return nodemailer.createTransport({
+      host: "smtp.sendgrid.net",
+      port: 2525,
+      secure: false,
+      auth: { user: "apikey", pass: process.env.SENDGRID_API_KEY },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
   }
 
-  console.log("📧 Using Gmail SMTP");
-  return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  });
+  throw new Error("No email provider configured. Set SMTP_HOST + SMTP_USER + SMTP_PASS in Render env vars.");
 };
 
 const escapeHtml = (value = "") =>

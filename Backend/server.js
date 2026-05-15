@@ -72,33 +72,24 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    emailProvider: process.env.SENDGRID_API_KEY ? "sendgrid" : (process.env.EMAIL_USER ? "gmail" : "none"),
+    emailProvider: process.env.SMTP_HOST || (process.env.SENDGRID_API_KEY ? "sendgrid" : "none"),
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
 });
 
-// Debug: test SendGrid email delivery
+// Debug: test email delivery
 app.get("/api/test-email", async (req, res) => {
-  if (!process.env.SENDGRID_API_KEY) {
-    return res.json({ status: "SENDGRID_API_KEY not set — emails won't send" });
-  }
+  const { sendInvitationEmail } = require("./services/emailService");
   try {
-    const nodemailer = require("nodemailer");
-    const transporter = nodemailer.createTransport({
-      host: "smtp.sendgrid.net", port: 2525, secure: false,
-      auth: { user: "apikey", pass: process.env.SENDGRID_API_KEY },
-      connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000,
+    const result = await sendInvitationEmail({
+      receiverMailAddress: "sahilatram1226@gmail.com",
+      invitationLink: "https://sync-meet-video-confrencing-applica.vercel.app/invite/test",
+      senderName: "SyncMeet Test",
     });
-    const info = await transporter.sendMail({
-      from: '"SyncMeet" <sahilatram1226@gmail.com>',
-      to: "sahilatram1226@gmail.com",
-      subject: "SyncMeet SendGrid Test",
-      text: "SendGrid works from Render!",
-    });
-    res.json({ success: true, messageId: info.messageId });
+    res.json({ sent: result, smtpHost: process.env.SMTP_HOST || "not set" });
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message, code: e.code });
+    res.json({ sent: false, error: e.message, smtpHost: process.env.SMTP_HOST || "not set" });
   }
 });
 
@@ -145,10 +136,10 @@ const startServer = async () => {
     console.log("✅ MongoDB Connected Successfully");
 
     // Warn about missing email config
-    if (!process.env.SENDGRID_API_KEY && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
+    if (!process.env.SMTP_HOST) {
       console.log("⚠️  No email provider configured — invitation emails will fail");
-      console.log("   ➜ Recommended: Add SENDGRID_API_KEY in Render Dashboard → Environment Variables");
-      console.log("   ➜ Alternative: Add EMAIL_USER + EMAIL_PASS (Gmail App Password)");
+      console.log("   ➜ Add SMTP_HOST + SMTP_USER + SMTP_PASS in Render Dashboard");
+      console.log("   ➜ Free options: Brevo (300/day), Mailgun (100/day), SendGrid (100/day)");
     }
 
     if (!process.env.FRONTEND_URL) {
