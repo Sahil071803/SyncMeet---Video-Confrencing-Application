@@ -9,20 +9,6 @@ import { styled } from "@mui/system";
 
 import useResponsive from "../../hooks/useResponsive";
 
-const SvgLogo = ({ size = 30 }) => (
-  <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: "relative", zIndex: 2 }}>
-    <rect x="40" y="40" width="432" height="432" rx="96" fill="rgba(255,255,255,0.2)"/>
-    <rect x="64" y="64" width="384" height="384" rx="76" fill="rgba(255,255,255,0.06)"/>
-    <rect x="100" y="170" width="260" height="170" rx="32" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="14"/>
-    <rect x="116" y="186" width="228" height="138" rx="20" fill="#0F172A"/>
-    <circle cx="230" cy="255" r="46" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="10"/>
-    <circle cx="230" cy="255" r="28" fill="rgba(255,255,255,0.3)"/>
-    <circle cx="230" cy="255" r="9" fill="#fff"/>
-    <path d="M348 200l-24 18 24 18" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M348 310l-24-18 24-18" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-);
-
 const StyledButton = styled(
   IconButton
 )(({ mobile }) => ({
@@ -64,7 +50,9 @@ const MainPageButton = () => {
   return (
     <Tooltip title="SyncMeet" placement="right">
       <StyledButton mobile={isMobile ? 1 : 0}>
-        <CameraLogo size={isMobile ? 28 : 30} />
+        <span style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, position: "relative", zIndex: 2 }}>
+          SM
+        </span>
       </StyledButton>
     </Tooltip>
   );
