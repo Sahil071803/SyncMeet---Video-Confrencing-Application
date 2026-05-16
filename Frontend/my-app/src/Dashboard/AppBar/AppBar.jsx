@@ -24,6 +24,7 @@ import useResponsive from "../../hooks/useResponsive";
 import { disconnectSocket } from "../../realtimeCommunication/socketConnection";
 
 import NotificationMenu from "./NotificationMenu";
+import SyncMeetLogo from "../../shared/components/SyncMeetLogo";
 
 const MainContainer = styled("div")(({ mobile, height }) => ({
   width: "100%",
@@ -48,26 +49,7 @@ const LeftSection = styled("div")({
   minWidth: 0,
 });
 
-const LogoWrapper = styled("div")(({ mobile }) => ({
-  width: mobile ? "46px" : "52px",
-  height: mobile ? "46px" : "52px",
-  borderRadius: mobile ? "16px" : "18px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "linear-gradient(135deg,#8B5CF6,#6D28D9)",
-  boxShadow: "0 10px 24px rgba(139,92,246,0.35)",
-  color: "#fff",
-  fontWeight: 800,
-  fontSize: mobile ? "18px" : "20px",
-  flexShrink: 0,
-}));
 
-const AppInfo = styled("div")({
-  display: "flex",
-  flexDirection: "column",
-  minWidth: 0,
-});
 
 const RightSection = styled("div")(({ mobile }) => ({
   display: "flex",
@@ -149,32 +131,7 @@ const AppBar = ({ setActiveSection }) => {
   return (
     <MainContainer mobile={isMobile ? 1 : 0} height={appBarHeight}>
       <LeftSection>
-        <LogoWrapper mobile={isMobile ? 1 : 0}>S</LogoWrapper>
-
-        {!isMobile && (
-          <AppInfo>
-            <Typography
-              sx={{
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: "18px",
-                lineHeight: 1.1,
-              }}
-            >
-              SyncMeet
-            </Typography>
-
-            <Typography
-              sx={{
-                color: "#94A3B8",
-                fontSize: "12px",
-                marginTop: "3px",
-              }}
-            >
-              Realtime Collaboration Platform
-            </Typography>
-          </AppInfo>
-        )}
+        <SyncMeetLogo size={isMobile ? 42 : 46} showText={!isMobile} />
       </LeftSection>
 
       <RightSection mobile={isMobile ? 1 : 0}>
