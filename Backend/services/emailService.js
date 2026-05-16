@@ -5,7 +5,7 @@ const sendViaResend = async ({ to, subject, html }) => {
   if (!apiKey) throw new Error("Set RESEND_API_KEY in Render Dashboard → Environment");
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
-    from: "SyncMeet <noreply@syncmeet.com>",
+    from: "SyncMeet <onboarding@resend.dev>",
     to,
     subject,
     html,
