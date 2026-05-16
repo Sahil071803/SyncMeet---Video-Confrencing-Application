@@ -93,7 +93,7 @@ app.get("/api/test-email", async (req, res) => {
     });
     res.json({ sent: true, statusCode: response?.[0]?.statusCode });
   } catch (e) {
-    res.json({ sent: false, error: e.message });
+    res.json({ sent: false, error: e.message, keyPrefix: key.substring(0, 7) + "..." });
   }
 });
 
