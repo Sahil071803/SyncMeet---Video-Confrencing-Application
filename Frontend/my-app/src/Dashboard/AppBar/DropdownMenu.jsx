@@ -25,7 +25,7 @@ const DropdownMenu = () => {
 
   return (
     <>
-      <IconButton onClick={handleMenuOpen} sx={{ color: "#b9bbbe" }}>
+      <IconButton id="dashboard-menu-button" onClick={handleMenuOpen} sx={{ color: "#b9bbbe" }}>
         <MoreVertIcon />
       </IconButton>
 

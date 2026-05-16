@@ -17,15 +17,15 @@ const MobileNav = ({ mobileView, setMobileView }) => {
         zIndex: 99999,
       }}
     >
-      <button onClick={() => setMobileView("friends")}>
+      <button type="button" onClick={() => setMobileView("friends")}>
         Friends
       </button>
 
-      <button onClick={() => setMobileView("chat")}>
+      <button type="button" onClick={() => setMobileView("chat")}>
         Chat
       </button>
 
-      <button onClick={() => setMobileView("video")}>
+      <button type="button" onClick={() => setMobileView("video")}>
         Video
       </button>
     </div>

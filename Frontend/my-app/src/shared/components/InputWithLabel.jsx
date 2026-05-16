@@ -38,15 +38,17 @@ const InputWithLabel = ({
   error = "", // 🔥 Add error prop
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const inputId = `input-${label.toLowerCase().replace(/\s+/g, "-")}`;
 
   const handleChange = (e) => setValue(e.target.value);
   const handleTogglePassword = () => setShowPassword((prev) => !prev);
 
   return (
     <Wrapper>
-      <Label>{label}</Label>
+      <Label htmlFor={inputId}>{label}</Label>
 
       <TextField
+        id={inputId}
         fullWidth
         variant="outlined"
         value={value}
@@ -54,8 +56,8 @@ const InputWithLabel = ({
         type={type === "password" && showPassword ? "text" : type}
         placeholder={placeholder}
         size="medium"
-        error={!!error} // 🔥 Shows red outline if error exists
-        helperText={error} // 🔥 Shows error message below input
+        error={!!error}
+        helperText={error}
         sx={{
           width: "100%",
           "& .MuiOutlinedInput-root": {

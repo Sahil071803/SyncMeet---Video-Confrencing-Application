@@ -694,6 +694,7 @@ const MeetingPanel = ({ selectedFriend }) => {
                 {REACTIONS.map((emoji) => (
                   <EmojiButton
                     key={emoji}
+                    type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSendReaction(emoji);
