@@ -18,18 +18,19 @@ const RegisterPage = ({ register }) => {
 
   const [isFormValid, setIsFormValid] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = (e) => {
+    e.preventDefault();
 
-  if (!isFormValid) return;
+    if (!isFormValid) return;
 
-  const userDetails = {
-    email,
-    username,
-    password,
+    const userDetails = {
+      email,
+      username,
+      password,
+    };
+
+    register(userDetails, navigate);
   };
-
-  register(userDetails, navigate);
-};
 
   useEffect(() => {
     setIsFormValid(
@@ -47,19 +48,22 @@ const RegisterPage = ({ register }) => {
         Create an account
       </Typography>
 
-      <RegisterPageInputs
-        email={email}
-        setEmail={setEmail}
-        username={username}
-        setUsername={setUsername}
-        password={password}
-        setPassword={setPassword}
-      />
+      <form onSubmit={handleRegister} style={{ width: "100%" }}>
 
-      <RegisterPageFooter
-        handleRegister={handleRegister}
-        isFormValid={isFormValid}
-      />
+        <RegisterPageInputs
+          email={email}
+          setEmail={setEmail}
+          username={username}
+          setUsername={setUsername}
+          password={password}
+          setPassword={setPassword}
+        />
+
+        <RegisterPageFooter
+          handleRegister={handleRegister}
+          isFormValid={isFormValid}
+        />
+      </form>
     </AuthBox>
   );
 };

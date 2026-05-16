@@ -1,16 +1,15 @@
-const { Resend } = require("resend");
+const sgMail = require("@sendgrid/mail");
 
-const sendViaResend = async ({ to, subject, html }) => {
-  const apiKey = (process.env.RESEND_API_KEY || "").trim();
-  if (!apiKey) throw new Error("Set RESEND_API_KEY in Render Dashboard → Environment");
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: "SyncMeet <noreply@syncmeet.com>",
+const sendViaSendGrid = async ({ to, subject, html }) => {
+  const apiKey = (process.env.SENDGRID_API_KEY || "").trim();
+  if (!apiKey) throw new Error("Set SENDGRID_API_KEY in Render Dashboard → Environment");
+  sgMail.setApiKey(apiKey);
+  await sgMail.send({
+    from: "sahilatram303@gmail.com",
     to,
     subject,
     html,
   });
-  if (error) throw new Error(error.message);
 };
 
 const escapeHtml = (value = "") =>
@@ -76,7 +75,7 @@ const sendInvitationEmail = async ({
     const safeSenderName = escapeHtml(senderName);
     const safeInvitationLink = escapeHtml(invitationLink);
 
-    await sendViaResend({
+    await sendViaSendGrid({
       to: receiverMailAddress,
       subject: "You're Invited To Join SyncMeet 🚀",
       html: buildHtml(safeSenderName, safeInvitationLink),

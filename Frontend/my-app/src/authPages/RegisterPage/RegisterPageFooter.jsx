@@ -37,7 +37,7 @@ const RegisterPageFooter = ({ handleRegister, isFormValid }) => {
             label="Register Now"
             additionalStyles={{ marginTop: "30px" }}
             disabled={!isFormValid}
-            onClick={handleRegister}
+            type="submit"
           />
         </div>
       </Tooltip>

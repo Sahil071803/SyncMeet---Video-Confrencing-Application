@@ -27,7 +27,8 @@ const LoginPage = ({ login }) => {
 
   }, [email, password]);
 
-  const handleLogin = () => {
+  const handleLogin = (e) => {
+    e.preventDefault();
 
     if (!isFormValid) return;
 
@@ -44,17 +45,21 @@ const LoginPage = ({ login }) => {
 
       <LoginPageHeader />
 
-      <LoginPageInputs
-        email={email}
-        setEmail={setEmail}
-        password={password}
-        setPassword={setPassword}
-      />
+      <form onSubmit={handleLogin} style={{ width: "100%" }}>
 
-      <LoginPageFooter
-        handleLogin={handleLogin}
-        isFormValid={isFormValid}
-      />
+        <LoginPageInputs
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+        />
+
+        <LoginPageFooter
+          handleLogin={handleLogin}
+          isFormValid={isFormValid}
+        />
+
+      </form>
 
     </AuthBox>
   );

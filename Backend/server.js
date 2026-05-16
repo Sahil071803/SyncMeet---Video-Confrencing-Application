@@ -72,27 +72,26 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    emailProvider: process.env.RESEND_API_KEY ? "resend" : "none",
+    emailProvider: process.env.SENDGRID_API_KEY ? "sendgrid" : "none",
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
 });
 
-// Debug: test email delivery via Resend
+// Debug: test email delivery via SendGrid
 app.get("/api/test-email", async (req, res) => {
-  const { Resend } = require("resend");
-  const key = (process.env.RESEND_API_KEY || "").trim();
-  if (!key) return res.json({ status: "Set RESEND_API_KEY in Render Dashboard → Environment" });
+  const sgMail = require("@sendgrid/mail");
+  const key = (process.env.SENDGRID_API_KEY || "").trim();
+  if (!key) return res.json({ status: "Set SENDGRID_API_KEY in Render Dashboard → Environment" });
   try {
-    const resend = new Resend(key);
-    const { data, error } = await resend.emails.send({
-      from: "SyncMeet <noreply@syncmeet.com>",
+    sgMail.setApiKey(key);
+    const response = await sgMail.send({
+      from: "sahilatram303@gmail.com",
       to: "sahilatram303@gmail.com",
       subject: "SyncMeet Test",
-      html: "<p>Resend works from Render!</p>",
+      html: "<p>SendGrid works from Render!</p>",
     });
-    if (error) throw new Error(error.message);
-    res.json({ sent: true, id: data?.id });
+    res.json({ sent: true, statusCode: response?.[0]?.statusCode });
   } catch (e) {
     res.json({ sent: false, error: e.message });
   }
@@ -141,9 +140,9 @@ const startServer = async () => {
     console.log("✅ MongoDB Connected Successfully");
 
     // Warn about missing email config
-    if (!process.env.RESEND_API_KEY) {
-      console.log("⚠️  RESEND_API_KEY not set — invitation emails will fail");
-      console.log("   ➜ Add RESEND_API_KEY in Render Dashboard → Environment Variables");
+    if (!process.env.SENDGRID_API_KEY) {
+      console.log("⚠️  SENDGRID_API_KEY not set — invitation emails will fail");
+      console.log("   ➜ Add SENDGRID_API_KEY in Render Dashboard → Environment Variables");
     }
 
     if (!process.env.FRONTEND_URL) {

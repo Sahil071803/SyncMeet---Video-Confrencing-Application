@@ -1,10 +1,11 @@
 import React from "react";
 import Button from "@mui/material/Button";
 
-const CustomPrimaryButton = ({ label, additionalStyles, disabled, onClick }) => {
+const CustomPrimaryButton = ({ label, additionalStyles, disabled, onClick, type }) => {
   return (
     <Button
       variant="contained"
+      type={type || "button"}
       sx={{
         background: "linear-gradient(135deg,#8B5CF6,#6D28D9)",
         "&:hover": { background: "linear-gradient(135deg,#9D6CFF,#7C3AED)" },
