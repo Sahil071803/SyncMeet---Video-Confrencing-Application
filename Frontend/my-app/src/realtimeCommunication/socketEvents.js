@@ -78,11 +78,12 @@ export const registerSocketEvents = (socket) => {
 
   socket.on("friends-invitations", (data) => {
     const invitations = data?.pendingInvitations || [];
+
+    const prevState = store.getState();
+    const prevCount = prevState.friends?.pendingFriendsInvitations?.length || 0;
+
     store.dispatch(setPendingFriendsInvitations(invitations));
 
-    // Notification for new pending invitations
-    const state = store.getState();
-    const prevCount = state.friends?.pendingFriendsInvitations?.length || 0;
     if (invitations.length > prevCount && invitations.length > 0) {
       const latest = invitations[0];
       const senderName = latest?.senderId?.username || "Someone";

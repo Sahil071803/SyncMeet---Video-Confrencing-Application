@@ -45,6 +45,12 @@ const updateFriendsPendingInvitations = async (userId) => {
     const socketIds = serverStore.getSocketIds(userId);
     const io = serverStore.getSocketServerInstance();
 
+    console.log(`📨 updateFriendsPendingInvitations for ${userId}: ${socketIds.length} socket(s)`);
+
+    if (!socketIds.length) {
+      console.log(`⚠️  No socket IDs found for user ${userId}`);
+    }
+
     socketIds.forEach((socketId) => {
       io.to(socketId).emit("friends-invitations", {
         pendingInvitations: pendingInvitations || [],
