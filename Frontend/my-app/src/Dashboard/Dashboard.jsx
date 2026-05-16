@@ -57,16 +57,8 @@ const Dashboard = () => {
   const { isMobile } = useResponsive();
   const sounds = useNotificationSounds();
   const browserNotif = useBrowserNotifications();
-  const callSoundCleanupRef = useRef(null);
-
-  const [selectedFriend, setSelectedFriend] = useState(null);
-  const [activeSection, setActiveSection] = useState("meeting");
-  const [incomingCall, setIncomingCall] = useState(null);
-  const [callRejected, setCallRejected] = useState(false);
-  const [callEnded, setCallEnded] = useState(false);
-  const [settings, setSettings] = useState(loadSettings);
-
   const friends = useSelector((state) => state.friends?.friends || []);
+  const friendsRef = useRef(friends);
   const unreadCount = useSelector((state) => state.notification?.unreadCount || 0);
 
   const updateSetting = useCallback((key, value) => {
@@ -94,6 +86,10 @@ const Dashboard = () => {
   useEffect(() => {
     browserNotif.requestPermission();
   }, []);
+
+  useEffect(() => {
+    friendsRef.current = friends;
+  }, [friends]);
 
   useEffect(() => {
     if (friends?.length > 0 && !selectedFriend) {
@@ -130,7 +126,8 @@ const Dashboard = () => {
         const cleanup = sounds.playCallSound();
         callSoundCleanupRef.current = cleanup;
 
-        const caller = friends.find(
+        const f = friendsRef.current;
+        const caller = f.find(
           (f) => f._id === data.from || f.id === data.from || f.userId === data.from
         );
 
@@ -169,7 +166,8 @@ const Dashboard = () => {
 
       setOnMessageCallback(({ senderName, preview, senderId }) => {
         sounds.playMessageSound();
-        const caller = friends.find(
+        const f = friendsRef.current;
+        const caller = f.find(
           (f) => f._id === senderId || f.id === senderId || f.userId === senderId
         );
         browserNotif.notifyMessage(senderName, preview, () => {
@@ -187,11 +185,9 @@ const Dashboard = () => {
     }
 
     return () => {
-      if (!import.meta.env.DEV) {
-        disconnectSocket();
-      }
+      disconnectSocket();
     };
-  }, [friends]);
+  }, []);
 
   const handleSelectFriend = (friend) => {
     setSelectedFriend(friend);
