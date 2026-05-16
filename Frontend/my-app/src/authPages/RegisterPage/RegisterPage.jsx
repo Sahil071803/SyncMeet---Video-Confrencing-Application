@@ -44,10 +44,6 @@ const RegisterPage = ({ register }) => {
 
   return (
     <AuthBox>
-      <Typography variant="h5">
-        Create an account
-      </Typography>
-
       <form onSubmit={handleRegister} style={{ width: "100%" }}>
 
         <RegisterPageInputs
