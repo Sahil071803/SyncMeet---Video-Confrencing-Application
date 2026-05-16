@@ -9,23 +9,17 @@ import { styled } from "@mui/system";
 
 import useResponsive from "../../hooks/useResponsive";
 
-const HexLogo = ({ size = 30 }) => (
+const SvgLogo = ({ size = 30 }) => (
   <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: "relative", zIndex: 2 }}>
-    <defs>
-      <linearGradient id="hex-bg" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#fff" stopOpacity="0.9"/>
-        <stop offset="100%" stopColor="#fff" stopOpacity="0.7"/>
-      </linearGradient>
-    </defs>
-    <polygon points="256,68 406,148 406,364 256,444 106,364 106,148" fill="rgba(255,255,255,0.22)"/>
-    <polygon points="256,96 380,164 380,348 256,416 132,348 132,164" fill="rgba(15,23,42,0.5)"/>
-    <rect x="140" y="200" width="180" height="120" rx="20" fill="rgba(255,255,255,0.15)"/>
-    <rect x="150" y="210" width="160" height="100" rx="12" fill="#0F172A"/>
-    <circle cx="230" cy="260" r="32" fill="rgba(255,255,255,0.2)"/>
-    <circle cx="230" cy="260" r="20" fill="rgba(255,255,255,0.35)"/>
-    <polygon points="223,250 223,270 241,260" fill="#fff"/>
-    <path d="M326 220l22-16-22-16" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M326 254l22-16-22-16" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" transform="translate(0,34)"/>
+    <rect x="40" y="40" width="432" height="432" rx="96" fill="rgba(255,255,255,0.2)"/>
+    <rect x="64" y="64" width="384" height="384" rx="76" fill="rgba(255,255,255,0.06)"/>
+    <rect x="100" y="170" width="260" height="170" rx="32" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="14"/>
+    <rect x="116" y="186" width="228" height="138" rx="20" fill="#0F172A"/>
+    <circle cx="230" cy="255" r="46" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="10"/>
+    <circle cx="230" cy="255" r="28" fill="rgba(255,255,255,0.3)"/>
+    <circle cx="230" cy="255" r="9" fill="#fff"/>
+    <path d="M348 200l-24 18 24 18" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M348 310l-24-18 24-18" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
