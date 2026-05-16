@@ -80,20 +80,28 @@ app.get("/api/health", (req, res) => {
 
 // Debug: test email delivery via SendGrid
 app.get("/api/test-email", async (req, res) => {
-  const sgMail = require("@sendgrid/mail");
   const key = (process.env.SENDGRID_API_KEY || "").trim();
   if (!key) return res.json({ status: "Set SENDGRID_API_KEY in Render Dashboard → Environment" });
+
+  // Try SMTP with nodemailer (more reliable with SendGrid)
+  const nodemailer = require("nodemailer");
+  const transporter = nodemailer.createTransport({
+    host: "smtp.sendgrid.net",
+    port: 587,
+    secure: false,
+    auth: { user: "apikey", pass: key },
+  });
+
   try {
-    sgMail.setApiKey(key);
-    const response = await sgMail.send({
+    const info = await transporter.sendMail({
       from: "sahilatram303@gmail.com",
       to: "sahilatram303@gmail.com",
       subject: "SyncMeet Test",
-      html: "<p>SendGrid works from Render!</p>",
+      html: "<p>SendGrid works via SMTP!</p>",
     });
-    res.json({ sent: true, statusCode: response?.[0]?.statusCode });
+    res.json({ sent: true, messageId: info.messageId });
   } catch (e) {
-    res.json({ sent: false, error: e.message, keyPrefix: key.substring(0, 7) + "..." });
+    res.json({ sent: false, error: e.message, method: "smtp", keyPrefix: key.substring(0, 7) + "..." });
   }
 });
 
