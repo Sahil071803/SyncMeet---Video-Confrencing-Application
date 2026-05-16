@@ -72,27 +72,44 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    emailProvider: process.env.RESEND_API_KEY ? "resend" : "none",
+    emailProvider: process.env.BREVO_API_KEY ? "brevo" : "none",
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
 });
 
-// Debug: test email delivery via Resend
+// Debug: test email delivery via Brevo
 app.get("/api/test-email", async (req, res) => {
-  const { Resend } = require("resend");
-  const key = (process.env.RESEND_API_KEY || "").trim();
-  if (!key) return res.json({ status: "Set RESEND_API_KEY in Render Dashboard → Environment" });
+  const key = (process.env.BREVO_API_KEY || "").trim();
+  if (!key) return res.json({ status: "Set BREVO_API_KEY in Render Dashboard → Environment" });
+
+  const https = require("https");
+  const data = JSON.stringify({
+    sender: { name: "SyncMeet", email: "sahilatram303@gmail.com" },
+    to: [{ email: "sahilatram303@gmail.com" }],
+    subject: "SyncMeet Test",
+    htmlContent: "<p>Brevo works from Render!</p>",
+  });
+
   try {
-    const resend = new Resend(key);
-    const { data, error } = await resend.emails.send({
-      from: "SyncMeet <onboarding@resend.dev>",
-      to: "sahilatram303@gmail.com",
-      subject: "SyncMeet Test",
-      html: "<p>Resend works from Render!</p>",
+    await new Promise((resolve, reject) => {
+      const req = https.request(
+        { hostname: "api.brevo.com", path: "/v3/smtp/email", method: "POST",
+          headers: { "api-key": key, "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } },
+        (res) => {
+          let body = "";
+          res.on("data", (c) => (body += c));
+          res.on("end", () => {
+            if (res.statusCode === 201) resolve();
+            else reject(new Error(`Brevo API ${res.statusCode}: ${body}`));
+          });
+        }
+      );
+      req.on("error", reject);
+      req.write(data);
+      req.end();
     });
-    if (error) throw new Error(error.message);
-    res.json({ sent: true, id: data?.id });
+    res.json({ sent: true });
   } catch (e) {
     res.json({ sent: false, error: e.message });
   }
@@ -141,9 +158,9 @@ const startServer = async () => {
     console.log("✅ MongoDB Connected Successfully");
 
     // Warn about missing email config
-    if (!process.env.RESEND_API_KEY) {
-      console.log("⚠️  RESEND_API_KEY not set — invitation emails will fail");
-      console.log("   ➜ Add RESEND_API_KEY in Render Dashboard → Environment Variables");
+    if (!process.env.BREVO_API_KEY) {
+      console.log("⚠️  BREVO_API_KEY not set — invitation emails will fail");
+      console.log("   ➜ Add BREVO_API_KEY in Render Dashboard → Environment Variables");
     }
 
     if (!process.env.FRONTEND_URL) {
