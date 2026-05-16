@@ -14,8 +14,7 @@ import CallEndRoundedIcon from "@mui/icons-material/CallEndRounded";
 import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
 import EmojiEmotionsRoundedIcon from "@mui/icons-material/EmojiEmotionsRounded";
 import StopScreenShareRoundedIcon from "@mui/icons-material/StopScreenShareRounded";
-import FullscreenRoundedIcon from "@mui/icons-material/FullscreenRounded";
-import FullscreenExitRoundedIcon from "@mui/icons-material/FullscreenExitRounded";
+
 
 import {
   getLocalPreview,
@@ -624,17 +623,6 @@ const MeetingPanel = ({ selectedFriend }) => {
             }}
           >
             {videoExpanded ? "You" : (selectedFriend?.username || selectedFriend?.name || "Remote User")}
-            <IconButton
-              onClick={() => setVideoExpanded((p) => !p)}
-              size="small"
-              sx={{
-                color: "rgba(255,255,255,0.6)",
-                padding: "4px",
-                "&:hover": { color: "#fff" },
-              }}
-            >
-              {videoExpanded ? <FullscreenExitRoundedIcon sx={{ fontSize: 18 }} /> : <FullscreenRoundedIcon sx={{ fontSize: 18 }} />}
-            </IconButton>
           </Typography>
 
           <Typography
@@ -647,7 +635,11 @@ const MeetingPanel = ({ selectedFriend }) => {
           </Typography>
         </RemoteUserInfo>
 
-        <LocalVideoWrapper mobile={isMobile ? 1 : 0}>
+        <LocalVideoWrapper
+          mobile={isMobile ? 1 : 0}
+          onClick={() => setVideoExpanded((p) => !p)}
+          style={{ cursor: "pointer" }}
+        >
           <Video
             ref={videoExpanded ? remoteVideoRef : localVideoRef}
             autoPlay
