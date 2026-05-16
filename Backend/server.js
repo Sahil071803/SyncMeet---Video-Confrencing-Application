@@ -72,41 +72,27 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "✅ API is healthy",
     allowedOrigins,
-    emailProvider: process.env.SENDGRID_API_KEY ? "sendgrid" : "none",
+    emailProvider: process.env.RESEND_API_KEY ? "resend" : "none",
     hasFrontendUrl: !!process.env.FRONTEND_URL,
     nodeEnv: process.env.NODE_ENV,
   });
 });
 
-// Debug: test email delivery via SendGrid
+// Debug: test email delivery via Resend
 app.get("/api/test-email", async (req, res) => {
-  const key = (process.env.SENDGRID_API_KEY || "").trim();
-  if (!key) return res.json({ status: "Set SENDGRID_API_KEY in Render Dashboard → Environment" });
-
-  const https = require("https");
-  const data = JSON.stringify({
-    personalizations: [{ to: [{ email: "sahilatram303@gmail.com" }] }],
-    from: { email: "sahilatram303@gmail.com" },
-    subject: "SyncMeet Test",
-    content: [{ type: "text/plain", value: "SendGrid works via REST API!" }],
-  });
-
+  const { Resend } = require("resend");
+  const key = (process.env.RESEND_API_KEY || "").trim();
+  if (!key) return res.json({ status: "Set RESEND_API_KEY in Render Dashboard → Environment" });
   try {
-    const result = await new Promise((resolve, reject) => {
-      const req = https.request(
-        { hostname: "api.sendgrid.com", path: "/v3/mail/send", method: "POST",
-          headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } },
-        (res) => {
-          let body = "";
-          res.on("data", (c) => (body += c));
-          res.on("end", () => resolve({ status: res.statusCode, body }));
-        }
-      );
-      req.on("error", reject);
-      req.write(data);
-      req.end();
+    const resend = new Resend(key);
+    const { data, error } = await resend.emails.send({
+      from: "SyncMeet <noreply@syncmeet.com>",
+      to: "sahilatram303@gmail.com",
+      subject: "SyncMeet Test",
+      html: "<p>Resend works from Render!</p>",
     });
-    res.json({ sent: result.status === 202, statusCode: result.status, responseBody: result.body });
+    if (error) throw new Error(error.message);
+    res.json({ sent: true, id: data?.id });
   } catch (e) {
     res.json({ sent: false, error: e.message });
   }
@@ -155,9 +141,9 @@ const startServer = async () => {
     console.log("✅ MongoDB Connected Successfully");
 
     // Warn about missing email config
-    if (!process.env.SENDGRID_API_KEY) {
-      console.log("⚠️  SENDGRID_API_KEY not set — invitation emails will fail");
-      console.log("   ➜ Add SENDGRID_API_KEY in Render Dashboard → Environment Variables");
+    if (!process.env.RESEND_API_KEY) {
+      console.log("⚠️  RESEND_API_KEY not set — invitation emails will fail");
+      console.log("   ➜ Add RESEND_API_KEY in Render Dashboard → Environment Variables");
     }
 
     if (!process.env.FRONTEND_URL) {

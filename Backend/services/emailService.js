@@ -1,41 +1,16 @@
-const https = require("https");
+const { Resend } = require("resend");
 
-const sendViaSendGrid = async ({ to, subject, html }) => {
-  const apiKey = (process.env.SENDGRID_API_KEY || "").trim();
-  if (!apiKey) throw new Error("Set SENDGRID_API_KEY in Render Dashboard → Environment");
-
-  const data = JSON.stringify({
-    personalizations: [{ to: [{ email: to }] }],
-    from: { email: "sahilatram303@gmail.com" },
+const sendViaResend = async ({ to, subject, html }) => {
+  const apiKey = (process.env.RESEND_API_KEY || "").trim();
+  if (!apiKey) throw new Error("Set RESEND_API_KEY in Render Dashboard → Environment");
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: "SyncMeet <noreply@syncmeet.com>",
+    to,
     subject,
-    content: [{ type: "text/html", value: html }],
+    html,
   });
-
-  await new Promise((resolve, reject) => {
-    const req = https.request(
-      {
-        hostname: "api.sendgrid.com",
-        path: "/v3/mail/send",
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + apiKey,
-          "Content-Type": "application/json",
-          "Content-Length": Buffer.byteLength(data),
-        },
-      },
-      (res) => {
-        let body = "";
-        res.on("data", (c) => (body += c));
-        res.on("end", () => {
-          if (res.statusCode === 202) resolve();
-          else reject(new Error(`SendGrid API ${res.statusCode}: ${body}`));
-        });
-      }
-    );
-    req.on("error", reject);
-    req.write(data);
-    req.end();
-  });
+  if (error) throw new Error(error.message);
 };
 
 const escapeHtml = (value = "") =>
@@ -101,7 +76,7 @@ const sendInvitationEmail = async ({
     const safeSenderName = escapeHtml(senderName);
     const safeInvitationLink = escapeHtml(invitationLink);
 
-    await sendViaSendGrid({
+    await sendViaResend({
       to: receiverMailAddress,
       subject: "You're Invited To Join SyncMeet 🚀",
       html: buildHtml(safeSenderName, safeInvitationLink),
