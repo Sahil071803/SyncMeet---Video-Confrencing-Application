@@ -392,6 +392,9 @@ export const toggleCamera = (enabled) => {
 
 let onConnectionStateCallback = null;
 
+export const getLocalStream = () => localStream;
+export const getRemoteStream = () => remoteStream;
+
 export const setOnConnectionStateCallback = (cb) => {
   onConnectionStateCallback = cb;
 };

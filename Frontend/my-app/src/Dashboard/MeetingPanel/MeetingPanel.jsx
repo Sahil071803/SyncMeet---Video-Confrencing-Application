@@ -28,6 +28,8 @@ import {
   handleWebRTCIceCandidate,
   startScreenShare,
   setOnConnectionStateCallback,
+  getLocalStream,
+  getRemoteStream,
 } from "../../realtimeCommunication/webRTCHandler";
 
 import { getSocket, sendCallEnded, sendCallReaction, getPendingOffer } from "../../realtimeCommunication/socketConnection";
@@ -350,6 +352,26 @@ const MeetingPanel = ({ selectedFriend, autoStartCall, onCallStarted }) => {
     return () => socket.off("call-reaction", handler);
   }, [addReaction]);
 
+  // Swap streams between large/PIP when toggling fullscreen
+  useEffect(() => {
+    const largeEl = remoteVideoRef.current;
+    const pipEl = localVideoRef.current;
+    if (!largeEl || !pipEl) return;
+
+    const localStream = getLocalStream();
+    const remoteStream = getRemoteStream();
+
+    if (videoExpanded) {
+      largeEl.srcObject = localStream;
+      pipEl.srcObject = remoteStream;
+    } else {
+      largeEl.srcObject = remoteStream;
+      pipEl.srcObject = localStream;
+    }
+
+    setRemoteVideo(videoExpanded ? localVideoRef : remoteVideoRef);
+  }, [videoExpanded]);
+
   // Auto-start call when triggered from sidebar video button
   useEffect(() => {
     if (autoStartCall && selectedFriend?._id && !callStarted && !incomingCall) {
@@ -617,10 +639,11 @@ const MeetingPanel = ({ selectedFriend, autoStartCall, onCallStarted }) => {
 
       <VideoArea mobile={isMobile ? 1 : 0}>
         <Video
-          ref={videoExpanded ? localVideoRef : remoteVideoRef}
+          ref={remoteVideoRef}
           autoPlay
           playsInline
           muted={videoExpanded}
+          onClick={() => videoExpanded && setVideoExpanded(false)}
         />
 
         {reactions.map((r, i) => (
@@ -659,7 +682,7 @@ const MeetingPanel = ({ selectedFriend, autoStartCall, onCallStarted }) => {
           style={{ cursor: "pointer" }}
         >
           <Video
-            ref={videoExpanded ? remoteVideoRef : localVideoRef}
+            ref={localVideoRef}
             autoPlay
             muted={!videoExpanded}
             playsInline
