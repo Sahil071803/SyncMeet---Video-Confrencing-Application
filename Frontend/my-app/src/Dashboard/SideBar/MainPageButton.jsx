@@ -9,20 +9,23 @@ import { styled } from "@mui/system";
 
 import useResponsive from "../../hooks/useResponsive";
 
-const CameraLogo = ({ size = 30 }) => (
-  <svg width={size} height={size * 0.7} viewBox="0 0 280 192" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: "relative", zIndex: 2 }}>
-    <rect x="0" y="10" width="220" height="172" rx="28" fill="rgba(255,255,255,0.2)" />
-    <rect x="14" y="24" width="192" height="144" rx="16" fill="#0F172A" />
-    <circle cx="110" cy="96" r="40" fill="rgba(167,139,250,0.3)" />
-    <circle cx="110" cy="96" r="28" fill="url(#logo-lens)" />
-    <circle cx="110" cy="96" r="10" fill="#fff" />
-    <path d="M220 30l40 36-40 36" stroke="rgba(255,255,255,0.5)" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+const HexLogo = ({ size = 30 }) => (
+  <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ position: "relative", zIndex: 2 }}>
     <defs>
-      <linearGradient id="logo-lens" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stopColor="#A78BFA" />
-        <stop offset="100%" stopColor="#7C3AED" />
+      <linearGradient id="hex-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#fff" stopOpacity="0.9"/>
+        <stop offset="100%" stopColor="#fff" stopOpacity="0.7"/>
       </linearGradient>
     </defs>
+    <polygon points="256,68 406,148 406,364 256,444 106,364 106,148" fill="rgba(255,255,255,0.22)"/>
+    <polygon points="256,96 380,164 380,348 256,416 132,348 132,164" fill="rgba(15,23,42,0.5)"/>
+    <rect x="140" y="200" width="180" height="120" rx="20" fill="rgba(255,255,255,0.15)"/>
+    <rect x="150" y="210" width="160" height="100" rx="12" fill="#0F172A"/>
+    <circle cx="230" cy="260" r="32" fill="rgba(255,255,255,0.2)"/>
+    <circle cx="230" cy="260" r="20" fill="rgba(255,255,255,0.35)"/>
+    <polygon points="223,250 223,270 241,260" fill="#fff"/>
+    <path d="M326 220l22-16-22-16" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M326 254l22-16-22-16" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" transform="translate(0,34)"/>
   </svg>
 );
 

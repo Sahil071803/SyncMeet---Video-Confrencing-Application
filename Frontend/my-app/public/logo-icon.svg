@@ -1,24 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="sm-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#8B5CF6"/>
-      <stop offset="100%" stop-color="#6D28D9"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
     </linearGradient>
-    <linearGradient id="sm-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#A78BFA"/>
       <stop offset="100%" stop-color="#7C3AED"/>
     </linearGradient>
   </defs>
+
+  <!-- Hexagonal badge -->
+  <polygon points="256,68 406,148 406,364 256,444 106,364 106,148" fill="url(#bg)"/>
+
+  <!-- Inner glass panel -->
+  <polygon points="256,96 380,164 380,348 256,416 132,348 132,164" fill="rgba(15,23,42,0.55)"/>
+
   <!-- Camera body -->
-  <rect x="80" y="160" width="280" height="192" rx="32" fill="url(#sm-grad)"/>
-  <rect x="96" y="176" width="248" height="160" rx="20" fill="#0F172A"/>
+  <rect x="140" y="200" width="180" height="120" rx="20" fill="rgba(167,139,250,0.2)"/>
+  <rect x="150" y="210" width="160" height="100" rx="12" fill="#0F172A"/>
+
   <!-- Camera lens -->
-  <circle cx="220" cy="256" r="52" fill="url(#sm-accent)" opacity="0.3"/>
-  <circle cx="220" cy="256" r="36" fill="url(#sm-accent)"/>
-  <circle cx="220" cy="256" r="16" fill="#fff"/>
+  <circle cx="230" cy="260" r="32" fill="rgba(167,139,250,0.25)"/>
+  <circle cx="230" cy="260" r="20" fill="url(#accent)"/>
+
+  <!-- Play triangle -->
+  <polygon points="223,250 223,270 241,260" fill="#fff"/>
+
   <!-- Sync arrows -->
-  <path d="M360 180l40 36-40 36" fill="none" stroke="url(#sm-grad)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M400 320l-40-36 40-36" fill="none" stroke="url(#sm-accent)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
-  <!-- S letter -->
-  <text x="220" y="278" font-family="Inter,Segoe UI,system-ui,sans-serif" font-size="80" font-weight="800" fill="#fff" text-anchor="middle" dominant-baseline="central">S</text>
+  <path d="M326 220l22-16-22-16" fill="none" stroke="url(#accent)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M326 254l22-16-22-16" fill="none" stroke="url(#accent)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" transform="translate(0,34)"/>
 </svg>
