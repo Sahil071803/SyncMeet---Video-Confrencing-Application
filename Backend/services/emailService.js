@@ -1,14 +1,40 @@
-const sgMail = require("@sendgrid/mail");
+const https = require("https");
 
 const sendViaSendGrid = async ({ to, subject, html }) => {
   const apiKey = (process.env.SENDGRID_API_KEY || "").trim();
   if (!apiKey) throw new Error("Set SENDGRID_API_KEY in Render Dashboard → Environment");
-  sgMail.setApiKey(apiKey);
-  await sgMail.send({
-    from: "sahilatram303@gmail.com",
-    to,
+
+  const data = JSON.stringify({
+    personalizations: [{ to: [{ email: to }] }],
+    from: { email: "sahilatram303@gmail.com" },
     subject,
-    html,
+    content: [{ type: "text/html", value: html }],
+  });
+
+  await new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: "api.sendgrid.com",
+        path: "/v3/mail/send",
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + apiKey,
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(data),
+        },
+      },
+      (res) => {
+        let body = "";
+        res.on("data", (c) => (body += c));
+        res.on("end", () => {
+          if (res.statusCode === 202) resolve();
+          else reject(new Error(`SendGrid API ${res.statusCode}: ${body}`));
+        });
+      }
+    );
+    req.on("error", reject);
+    req.write(data);
+    req.end();
   });
 };
 

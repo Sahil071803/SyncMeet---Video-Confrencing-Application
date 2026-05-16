@@ -83,25 +83,32 @@ app.get("/api/test-email", async (req, res) => {
   const key = (process.env.SENDGRID_API_KEY || "").trim();
   if (!key) return res.json({ status: "Set SENDGRID_API_KEY in Render Dashboard → Environment" });
 
-  // Try SMTP with nodemailer (more reliable with SendGrid)
-  const nodemailer = require("nodemailer");
-  const transporter = nodemailer.createTransport({
-    host: "smtp.sendgrid.net",
-    port: 587,
-    secure: false,
-    auth: { user: "apikey", pass: key },
+  const https = require("https");
+  const data = JSON.stringify({
+    personalizations: [{ to: [{ email: "sahilatram303@gmail.com" }] }],
+    from: { email: "sahilatram303@gmail.com" },
+    subject: "SyncMeet Test",
+    content: [{ type: "text/plain", value: "SendGrid works via REST API!" }],
   });
 
   try {
-    const info = await transporter.sendMail({
-      from: "sahilatram303@gmail.com",
-      to: "sahilatram303@gmail.com",
-      subject: "SyncMeet Test",
-      html: "<p>SendGrid works via SMTP!</p>",
+    const result = await new Promise((resolve, reject) => {
+      const req = https.request(
+        { hostname: "api.sendgrid.com", path: "/v3/mail/send", method: "POST",
+          headers: { "Authorization": "Bearer " + key, "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } },
+        (res) => {
+          let body = "";
+          res.on("data", (c) => (body += c));
+          res.on("end", () => resolve({ status: res.statusCode, body }));
+        }
+      );
+      req.on("error", reject);
+      req.write(data);
+      req.end();
     });
-    res.json({ sent: true, messageId: info.messageId });
+    res.json({ sent: result.status === 202, statusCode: result.status, responseBody: result.body });
   } catch (e) {
-    res.json({ sent: false, error: e.message, method: "smtp", keyPrefix: key.substring(0, 7) + "..." });
+    res.json({ sent: false, error: e.message });
   }
 });
 
