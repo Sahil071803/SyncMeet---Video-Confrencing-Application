@@ -144,7 +144,7 @@ const Pill = styled("div")({
   border: "1px solid rgba(139,92,246,0.18)",
 });
 
-const FriendsSideBar = ({ setSelectedFriend }) => {
+const FriendsSideBar = ({ setSelectedFriend, onVideoCall }) => {
   const { isMobile } = useResponsive();
 
   const friends = useSelector((state) => state.friends?.friends || []);
@@ -271,7 +271,7 @@ const FriendsSideBar = ({ setSelectedFriend }) => {
             <Pill>{friends.length}</Pill>
           </SectionHeader>
 
-          <FriendsList setSelectedFriend={setSelectedFriend} />
+          <FriendsList setSelectedFriend={setSelectedFriend} onVideoCall={onVideoCall} />
         </Section>
 
         <Section>

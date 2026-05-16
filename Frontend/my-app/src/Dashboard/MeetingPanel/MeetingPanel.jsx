@@ -304,7 +304,7 @@ const getInitialPrefs = () => {
   }
 };
 
-const MeetingPanel = ({ selectedFriend }) => {
+const MeetingPanel = ({ selectedFriend, autoStartCall, onCallStarted }) => {
   const { isMobile } = useResponsive();
 
   const localVideoRef = useRef(null);
@@ -349,6 +349,17 @@ const MeetingPanel = ({ selectedFriend }) => {
     socket.on("call-reaction", handler);
     return () => socket.off("call-reaction", handler);
   }, [addReaction]);
+
+  // Auto-start call when triggered from sidebar video button
+  useEffect(() => {
+    if (autoStartCall && selectedFriend?._id && !callStarted && !incomingCall) {
+      (async () => {
+        await handleStartCall();
+        onCallStarted?.();
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartCall, selectedFriend]);
 
   // Connection state callback
   useEffect(() => {

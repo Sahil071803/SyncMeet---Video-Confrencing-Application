@@ -87,7 +87,7 @@ const EmptyIcon = styled("div")({
   border: "1px solid rgba(139,92,246,0.18)",
 });
 
-const FriendsList = ({ setSelectedFriend }) => {
+const FriendsList = ({ setSelectedFriend, onVideoCall }) => {
   const dispatch = useDispatch();
 
   const [activeFriendId, setActiveFriendId] = useState(null);
@@ -215,6 +215,7 @@ const FriendsList = ({ setSelectedFriend }) => {
               isOnline={friend.isOnline}
               active={activeFriendId === friend.id}
               onClick={() => handleSelectFriend(friend)}
+              onVideoCall={() => onVideoCall?.(friend)}
               onRemoveFriend={() => handleRemoveFriend(friend.id)}
             />
           ))

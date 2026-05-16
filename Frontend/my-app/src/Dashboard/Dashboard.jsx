@@ -60,6 +60,15 @@ const Dashboard = () => {
   const friends = useSelector((state) => state.friends?.friends || []);
   const friendsRef = useRef(friends);
   const unreadCount = useSelector((state) => state.notification?.unreadCount || 0);
+  const callSoundCleanupRef = useRef(null);
+
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [activeSection, setActiveSection] = useState("meeting");
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [callRejected, setCallRejected] = useState(false);
+  const [callEnded, setCallEnded] = useState(false);
+  const [autoStartCall, setAutoStartCall] = useState(false);
+  const [settings, setSettings] = useState(loadSettings);
 
   const updateSetting = useCallback((key, value) => {
     setSettings((prev) => {
@@ -194,6 +203,12 @@ const Dashboard = () => {
     setActiveSection("messages");
   };
 
+  const handleVideoCall = (friend) => {
+    setSelectedFriend(friend);
+    setAutoStartCall(true);
+    setActiveSection("meeting");
+  };
+
   const handleAcceptCall = () => {
     console.log("✅ Call accepted");
     if (callSoundCleanupRef.current) {
@@ -217,7 +232,7 @@ const Dashboard = () => {
 
   const renderActiveScreen = () => {
     if (activeSection === "participants") {
-      return <FriendsSideBar setSelectedFriend={handleSelectFriend} />;
+      return <FriendsSideBar setSelectedFriend={handleSelectFriend} onVideoCall={handleVideoCall} />;
     }
 
     if (activeSection === "messages") {
@@ -225,7 +240,13 @@ const Dashboard = () => {
     }
 
     if (activeSection === "meeting") {
-      return <MeetingPanel selectedFriend={selectedFriend} />;
+      return (
+        <MeetingPanel
+          selectedFriend={selectedFriend}
+          autoStartCall={autoStartCall}
+          onCallStarted={() => setAutoStartCall(false)}
+        />
+      );
     }
 
     if (activeSection === "alerts") {
@@ -241,7 +262,13 @@ const Dashboard = () => {
       );
     }
 
-    return <MeetingPanel selectedFriend={selectedFriend} />;
+    return (
+      <MeetingPanel
+        selectedFriend={selectedFriend}
+        autoStartCall={autoStartCall}
+        onCallStarted={() => setAutoStartCall(false)}
+      />
+    );
   };
 
   return (

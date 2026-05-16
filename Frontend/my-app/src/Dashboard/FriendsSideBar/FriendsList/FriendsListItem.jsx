@@ -158,6 +158,7 @@ const FriendsListItem = ({
   isOnline,
   active,
   onClick,
+  onVideoCall,
   onRemoveFriend,
 }) => {
   const avatarLetter = username?.charAt(0) || "?";
@@ -210,7 +211,7 @@ const FriendsListItem = ({
           <ActionButton
             onClick={(e) => {
               e.stopPropagation();
-              onClick?.();
+              onVideoCall?.({ id, username, email, isOnline });
             }}
           >
             <VideocamRoundedIcon sx={{ fontSize: 20 }} />
