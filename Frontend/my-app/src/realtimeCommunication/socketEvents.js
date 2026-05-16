@@ -15,6 +15,8 @@ let onCallRejectedCallback = null;
 let onCallEndedCallback = null;
 let onMessageCallback = null;
 let onFriendRequestCallback = null;
+let onWebRTCOfferCallback = null;
+let pendingOffer = null;
 
 export const setIncomingCallCallback = (callback) => {
   onIncomingCallCallback = callback;
@@ -36,6 +38,16 @@ export const setOnFriendRequestCallback = (callback) => {
   onFriendRequestCallback = callback;
 };
 
+export const setOnWebRTCOfferCallback = (callback) => {
+  onWebRTCOfferCallback = callback;
+  if (pendingOffer) {
+    callback(pendingOffer);
+    pendingOffer = null;
+  }
+};
+
+export const getPendingOffer = () => pendingOffer;
+
 const getFriends = () => {
   const state = store.getState();
   return state.friends?.friends || [];
@@ -56,6 +68,7 @@ export const registerSocketEvents = (socket) => {
   socket.off("friends-invitations");
   socket.off("direct-message");
   socket.off("user-presence-update");
+  socket.off("webrtc-offer");
   socket.off("incoming-call");
   socket.off("call-rejected");
   socket.off("call-ended");
@@ -140,6 +153,16 @@ export const registerSocketEvents = (socket) => {
       if (onMessageCallback) {
         onMessageCallback({ senderName, preview, senderId: msg.senderId });
       }
+    }
+  });
+
+  socket.on("webrtc-offer", (data) => {
+    console.log("📩 WebRTC offer received (global):", data?.from);
+    if (onWebRTCOfferCallback) {
+      onWebRTCOfferCallback(data);
+    } else {
+      pendingOffer = data;
+      console.log("⏳ WebRTC offer queued, waiting for MeetingPanel");
     }
   });
 

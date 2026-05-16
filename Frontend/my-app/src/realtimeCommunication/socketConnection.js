@@ -312,6 +312,8 @@ export const getSocket = () =>
 export const isSocketConnected =
   () => !!socket?.connected;
 
+export { getPendingOffer } from "./socketEvents.js";
+
 export const disconnectSocket =
   () => {
     try {

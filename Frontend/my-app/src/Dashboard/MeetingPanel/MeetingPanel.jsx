@@ -30,7 +30,8 @@ import {
   setOnConnectionStateCallback,
 } from "../../realtimeCommunication/webRTCHandler";
 
-import { getSocket, sendCallEnded, sendCallReaction } from "../../realtimeCommunication/socketConnection";
+import { getSocket, sendCallEnded, sendCallReaction, getPendingOffer } from "../../realtimeCommunication/socketConnection";
+import { setOnWebRTCOfferCallback } from "../../realtimeCommunication/socketEvents";
 
 const REACTIONS = ["❤️", "😂", "🎉", "🔥", "👍"];
 
@@ -410,16 +411,22 @@ const MeetingPanel = ({ selectedFriend }) => {
       socket = getSocket();
 
       if (socket) {
-        socket.off("webrtc-offer", handleWebRTCOffer);
         socket.off("webrtc-answer", handleWebRTCAnswer);
         socket.off("webrtc-ice-candidate", handleWebRTCIceCandidate);
         socket.off("call-rejected");
         socket.off("call-ended");
 
-        socket.on("webrtc-offer", (data) => {
+        setOnWebRTCOfferCallback((data) => {
           setIncomingCall(true);
           handleWebRTCOffer(data, localVideoRef);
         });
+
+        const queued = getPendingOffer();
+        if (queued) {
+          setIncomingCall(true);
+          handleWebRTCOffer(queued, localVideoRef);
+        }
+
         socket.on("webrtc-answer", handleWebRTCAnswer);
         socket.on("webrtc-ice-candidate", handleWebRTCIceCandidate);
         socket.on("call-rejected", () => {
